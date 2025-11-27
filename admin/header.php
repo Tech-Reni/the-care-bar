@@ -1,0 +1,89 @@
+<?php
+session_start();
+require_once __DIR__ . '/../includes/db.php';
+
+// Check if user is logged in (for future auth implementation)
+// For now, just ensure admin access
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo isset($page_title) ? $page_title . ' - ' : ''; ?>The Care Bar Admin</title>
+
+    <!-- Google Font: Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Remix Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="<?= $BASE_URL ?>assets/css/admin.css">
+
+    <!-- Quill Editor (optional, loaded on demand) -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+</head>
+<body>
+    <!-- ================================
+            SIDEBAR
+    ================================ -->
+    <div class="sidebar" id="sidebar">
+        <div class="sb-header">
+            <h2>The Care Bar</h2>
+            <button class="sb-close" onclick="toggleSidebar()"><i class="ri-close-line"></i></button>
+        </div>
+
+        <div class="sb-menu">
+            <a href="<?= $BASE_URL ?>admin/index.php" class="<?= (strpos($_SERVER['PHP_SELF'], 'admin/index') !== false) ? 'active' : ''; ?>">
+                <i class="ri-dashboard-line"></i> Dashboard
+            </a>
+            <a href="<?= $BASE_URL ?>admin/products.php" class="<?= (strpos($_SERVER['PHP_SELF'], 'admin/products') !== false) ? 'active' : ''; ?>">
+                <i class="ri-shopping-bag-3-line"></i> Products
+            </a>
+            <a href="<?= $BASE_URL ?>admin/categories.php" class="<?= (strpos($_SERVER['PHP_SELF'], 'admin/categories') !== false) ? 'active' : ''; ?>">
+                <i class="ri-folders-line"></i> Categories
+            </a>
+            <a href="<?= $BASE_URL ?>admin/orders.php" class="<?= (strpos($_SERVER['PHP_SELF'], 'admin/orders') !== false) ? 'active' : ''; ?>">
+                <i class="ri-file-list-3-line"></i> Orders
+            </a>
+            <a href="#" class="coming-soon">
+                <i class="ri-settings-3-line"></i> Settings <span class="badge">Soon</span>
+            </a>
+        </div>
+
+        <div class="sb-footer">
+            <a href="<?= $BASE_URL ?>index.php" class="sb-link-secondary">
+                <i class="ri-home-4-line"></i> View Site
+            </a>
+            <a href="#" class="sb-link-secondary logout">
+                <i class="ri-logout-box-line"></i> Logout
+            </a>
+        </div>
+    </div>
+
+    <!-- ================================
+            MAIN CONTENT WRAPPER
+    ================================ -->
+    <div class="main">
+        <!-- Top Navbar -->
+        <div class="topbar">
+            <button class="menu-btn" onclick="toggleSidebar()">
+                <i class="ri-menu-line"></i>
+            </button>
+
+            <h3 id="page-title"><?php echo isset($page_title) ? $page_title : 'Admin Panel'; ?></h3>
+
+            <div class="top-right">
+                <button class="icon-btn" title="Notifications">
+                    <i class="ri-notification-3-line"></i>
+                    <span class="badge">3</span>
+                </button>
+                <button class="icon-btn" title="User Profile">
+                    <i class="ri-user-3-line"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Page Content -->
+        <div class="page-content">

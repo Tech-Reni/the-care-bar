@@ -1,0 +1,313 @@
+/* ----------------------------------------------------------
+   HEADER + SIDEBAR + CART (THE CARE BAR)
+---------------------------------------------------------- */
+
+/* Utility */
+.flex-between {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+
+/* ------------------ HEADER ------------------ */
+
+.header {
+  width: 100%;
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200);
+  padding: 12px 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.header .logo img {
+  height: 55px;
+}
+
+.header .nav-links ul {
+  display: flex;
+  gap: 28px;
+  list-style: none;
+}
+
+.header .nav-links ul li a {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--black);
+  transition: 0.25s ease;
+}
+
+.header .nav-links ul li a:hover {
+  color: var(--pink-400);
+}
+
+#cartCount {
+  background: var(--pink-400);
+  padding: 2px 8px;
+  color: var(--white);
+  font-size: 13px;
+  border-radius: 8px;
+  margin-left: 4px;
+}
+
+
+/* ------------------ HAMBURGER ------------------ */
+
+.hamburger {
+  display: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: var(--black);
+}
+
+.hamburger i {
+  transition: 0.3s ease;
+}
+
+.hamburger:hover i {
+  transform: scale(1.12);
+}
+
+
+/* ------------------ SIDEBAR ------------------ */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -280px; /* Hidden Initially */
+  width: 260px;
+  height: 100%;
+  background: var(--white);
+  box-shadow: 4px 0 25px rgba(0,0,0,0.08);
+  z-index: 2000;
+  transition: 0.3s ease;
+  padding: 20px 0;
+}
+
+.sidebar.active {
+  left: 0;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 18px;
+  margin-bottom: 25px;
+}
+
+.sidebar-header .logo-sidebar {
+  height: 45px;
+}
+
+.close-icon {
+  font-size: 28px;
+  cursor: pointer;
+  color: var(--gray-500);
+  transition: 0.25s;
+}
+
+.close-icon:hover {
+  color: var(--pink-400);
+}
+
+.sidebar-nav ul {
+  list-style: none;
+}
+
+.sidebar-nav ul li {
+  margin: 10px 0;
+}
+
+.sidebar-nav ul li a {
+  font-size: 17px;
+  color: var(--black);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: 0.25s ease;
+}
+
+.sidebar-nav ul li a:hover {
+  background: var(--pink-100);
+  border-left: 4px solid var(--pink-400);
+  padding-left: 16px;
+}
+
+/* Sidebar Social Icons */
+.sidebar-social {
+  display: flex;
+  gap: 15px;
+  padding: 20px;
+  margin-top: auto;
+  justify-content: center;
+  border-top: 1px solid var(--gray-100);
+}
+
+.sidebar-social a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--pink-100);
+  color: var(--pink-400);
+  font-size: 18px;
+  transition: all 0.2s ease;
+}
+
+.sidebar-social a:hover {
+  background: var(--pink-400);
+  color: var(--white);
+  transform: scale(1.1);
+}
+
+/* ------------------ MOBILE CART + CONTROLS ------------------ */
+
+.mobile-controls {
+    display: none;
+    align-items: center;
+    gap: 25px;
+}
+
+.mobile-cart {
+    position: relative;
+    font-size: 26px;
+    color: var(--black);
+    transition: 0.2s ease;
+}
+
+.mobile-cart:hover {
+    color: var(--pink-400);
+}
+
+.mobile-cart-count {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    background: var(--pink-400);
+    color: var(--white);
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+/* RESPONSIVE */
+@media (max-width: 850px) {
+    .desktop-nav {
+        display: none;
+    }
+
+    .mobile-controls {
+        display: flex;
+    }
+}
+
+/* ------------------ OVERLAY ------------------ */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  visibility: hidden;
+  transition: 0.3s ease;
+  z-index: 1500;
+}
+
+.overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+
+/* ------------------ RESPONSIVE ------------------ */
+
+@media (max-width: 850px) {
+  .desktop-nav {
+    display: none;
+  }
+
+  .hamburger {
+    display: block;
+  }
+
+  .header .logo img {
+    height: 48px;
+  }
+}
+
+
+/* --- 7. CART SLIDE PANEL --- */
+.cart-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    max-width: 400px;
+    background-color: var(--white);
+    box-shadow: -4px 0 15px rgba(0, 0, 0, 0.1);
+    transform: translateX(0);
+    transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.cart-panel.hidden {
+    transform: translateX(100%);
+    pointer-events: none; /* Prevents interaction when hidden */
+}
+
+.cart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.close-cart {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--gray-400);
+}
+
+.cart-items {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* Add styles for dynamically inserted cart items when JS is functional */
+/* Example:
+.cart-item { ... }
+*/
+
+.cart-footer {
+    padding: 20px;
+    border-top: 1px solid var(--gray-100);
+}
+
+.cart-total {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.cart-actions .btn {
+    margin-top: 10px;
+    width: 100%;
+}
+
+
+
