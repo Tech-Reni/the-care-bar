@@ -123,6 +123,18 @@ try {
 } catch (Exception $e) {
     $response['success'] = false;
     $response['message'] = $e->getMessage();
+    // Add debug info for development
+    $response['debug'] = [
+        'exception_message' => $e->getMessage(),
+        'exception_file' => $e->getFile(),
+        'exception_line' => $e->getLine(),
+        'exception_trace' => $e->getTrace()
+    ];
+    // Add database error if available
+    if (!empty($GLOBALS['conn'])) {
+        $response['debug']['db_error'] = $GLOBALS['conn']->error ?? null;
+        $response['debug']['db_errno'] = $GLOBALS['conn']->errno ?? null;
+    }
 }
 
 echo json_encode($response);

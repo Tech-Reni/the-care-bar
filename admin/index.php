@@ -6,6 +6,21 @@ require_once __DIR__ . '/header.php';
 $stats = getAdminStats();
 ?>
 
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "7e511f6c-c42e-4e6f-a989-b7eb636981bd",
+      safari_web_id: "web.onesignal.auto.1b5e3a9a-fd8d-4cbc-b150-cc0a98b0f0fe",
+      notifyButton: {
+        enable: true,
+      },
+    });
+  });
+</script>
+
+
 <!-- Dashboard Content -->
 <div class="container">
     <h1 style="margin-bottom: 30px;">Dashboard</h1>
@@ -84,7 +99,7 @@ $stats = getAdminStats();
     </div>
 
     <!-- Quick Actions -->
-    <div style="margin-bottom: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
+    <div style="margin-bottom: 30px; display: flex; gap: 10px; justify-content: space-evenly; flex-wrap: wrap;">
         <a href="<?php echo $BASE_URL; ?>admin/products.php?action=new" class="btn btn-primary">
             <i class="ri-add-line"></i> Add New Product
         </a>

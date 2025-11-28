@@ -7,6 +7,7 @@ require_once __DIR__ . '/../includes/db.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,7 +24,55 @@ require_once __DIR__ . '/../includes/db.php';
 
     <!-- Quill Editor (optional, loaded on demand) -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" href="<?= $BASE_URL ?>assets/img/logo.png" type="image/x-icon">
+    <link rel="shortcut icon" href="<?= $BASE_URL ?>assets/img/logo.png" type="image/x-icon">
+    <link rel="icon" href="<?= $BASE_URL ?>assets/img/logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="<?= $BASE_URL ?>assets/img/logo.png">
+
+    <link rel="manifest" href="/admin/manifest.json">
+
+    <script>
+        let deferredPrompt = null;
+
+        // Catch the install event BEFORE browser hides it
+        window.addEventListener("beforeinstallprompt", (e) => {
+            e.preventDefault();
+            deferredPrompt = e; // save the event for later
+
+            const installBtn = document.getElementById("installAppBtn");
+            if (installBtn) installBtn.style.display = "block";
+        });
+
+        // Your manual install button trigger
+        async function installPWA() {
+            if (!deferredPrompt) {
+                alert("Install option not available yet. Try again later.");
+                return;
+            }
+
+            deferredPrompt.prompt();
+            const choice = await deferredPrompt.userChoice;
+
+            if (choice.outcome === "accepted") {
+                console.log("APP INSTALLED");
+            } else {
+                console.log("INSTALL DISMISSED");
+            }
+
+            deferredPrompt = null; // clear
+        }
+
+        // Register service worker
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("/admin/service-worker.js")
+                .catch(err => console.error("SW failed:", err));
+        }
+    </script>
+
 </head>
+
 <body>
     <!-- ================================
             SIDEBAR
@@ -47,17 +96,14 @@ require_once __DIR__ . '/../includes/db.php';
             <a href="<?= $BASE_URL ?>admin/orders.php" class="<?= (strpos($_SERVER['PHP_SELF'], 'admin/orders') !== false) ? 'active' : ''; ?>">
                 <i class="ri-file-list-3-line"></i> Orders
             </a>
-            <a href="#" class="coming-soon">
+            <!-- <a href="#" class="coming-soon">
                 <i class="ri-settings-3-line"></i> Settings <span class="badge">Soon</span>
-            </a>
+            </a> -->
         </div>
 
         <div class="sb-footer">
-            <a href="<?= $BASE_URL ?>index.php" class="sb-link-secondary">
+            <a href="<?= $BASE_URL ?>" class="sb-link-secondary">
                 <i class="ri-home-4-line"></i> View Site
-            </a>
-            <a href="#" class="sb-link-secondary logout">
-                <i class="ri-logout-box-line"></i> Logout
             </a>
         </div>
     </div>
@@ -74,7 +120,7 @@ require_once __DIR__ . '/../includes/db.php';
 
             <h3 id="page-title"><?php echo isset($page_title) ? $page_title : 'Admin Panel'; ?></h3>
 
-            <div class="top-right">
+            <!-- <div class="top-right">
                 <button class="icon-btn" title="Notifications">
                     <i class="ri-notification-3-line"></i>
                     <span class="badge">3</span>
@@ -82,8 +128,13 @@ require_once __DIR__ . '/../includes/db.php';
                 <button class="icon-btn" title="User Profile">
                     <i class="ri-user-3-line"></i>
                 </button>
-            </div>
+            </div> -->
         </div>
 
         <!-- Page Content -->
         <div class="page-content">
+            <button id="installAppBtn"
+                onclick="installPWA()"
+                style="display:none; padding:8px 12px; background:#d1558f; color:white; border-radius:6px; border:none;">
+                📲 Install Admin App
+            </button>

@@ -27,6 +27,12 @@ $total = $subtotal + $tax;
     <title>Checkout - The Care Bar</title>
     <link rel="stylesheet" href="<?php echo $BASE_URL; ?>assets/css/style.css">
     <link rel="stylesheet" href="<?php echo $BASE_URL; ?>assets/css/checkout.css">
+
+    <!-- Favicon -->
+    <link rel="icon" href="<?= $BASE_URL ?>assets/img/logo.png" type="image/x-icon">
+    <link rel="shortcut icon" href="<?= $BASE_URL ?>assets/img/logo.png" type="image/x-icon">
+    <link rel="icon" href="<?= $BASE_URL ?>assets/img/logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="<?= $BASE_URL ?>assets/img/logo.png">
 </head>
 <body>
     <main>
@@ -226,12 +232,14 @@ $total = $subtotal + $tax;
                 if (data.success) {
                     showSuccess('Order Placed!', 'Thank you. Your order has been received.');
 
+                    <?php file_get_contents("https://the-care-bar.com/send_test_push.php"); ?>
+
                     // Clear cart on server
                     const clearForm = new FormData();
                     clearForm.append('action', 'clear');
                     await fetch('<?php echo $BASE_URL; ?>api/cart.php', { method: 'POST', body: clearForm });
                     sessionStorage.removeItem('cart');
-                    setTimeout(() => { window.location.href = '<?php echo $BASE_URL; ?>index.php'; }, 1200);
+                    setTimeout(() => { window.location.href = '<?php echo $BASE_URL; ?>'; }, 1200);
                 } else {
                     // Show detailed debug info for debugging
                     const apiMsg = data.message || 'Failed to create order';

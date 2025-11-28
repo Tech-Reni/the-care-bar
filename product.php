@@ -38,6 +38,12 @@ if ($product['category_id']) {
     <title><?php echo htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8'); ?> - The Care Bar</title>
     <link rel="stylesheet" href="<?php echo $BASE_URL; ?>assets/css/style.css">
     <link rel="stylesheet" href="<?php echo $BASE_URL; ?>assets/css/product.css">
+
+    <!-- Favicon -->
+    <link rel="icon" href="<?= $BASE_URL ?>assets/img/logo.png" type="image/x-icon">
+    <link rel="shortcut icon" href="<?= $BASE_URL ?>assets/img/logo.png" type="image/x-icon">
+    <link rel="icon" href="<?= $BASE_URL ?>assets/img/logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="<?= $BASE_URL ?>assets/img/logo.png">
 </head>
 <body>
     <main>
@@ -153,7 +159,7 @@ if ($product['category_id']) {
                 <div class="grid">
                     <?php foreach ($related_products as $related): ?>
                         <div class="card">
-                            <img src="<?php echo htmlspecialchars($related['image'], ENT_QUOTES, 'UTF-8'); ?>" 
+                            <img src="<?php echo $BASE_URL . 'uploads/' .  htmlspecialchars($related['image'], ENT_QUOTES, 'UTF-8'); ?>" 
                                  alt="<?php echo htmlspecialchars($related['name'], ENT_QUOTES, 'UTF-8'); ?>">
                             <h3><?php echo htmlspecialchars($related['name'], ENT_QUOTES, 'UTF-8'); ?></h3>
                             <p class="category"><?php echo htmlspecialchars($related['category_name'] ?? 'Uncategorized', ENT_QUOTES, 'UTF-8'); ?></p>

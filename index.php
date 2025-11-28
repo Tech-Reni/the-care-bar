@@ -15,11 +15,6 @@ $featured_products = getRandomProducts(5);
     <link rel="stylesheet" href="<?php echo $BASE_URL; ?>assets/css/style.css">
     <link rel="stylesheet" href="<?php echo $BASE_URL; ?>assets/css/home.css">
 
-    <!-- Favicon -->
-    <link rel="icon" href="<?= $BASE_URL ?>assets/img/logo.png" type="image/x-icon">
-    <link rel="shortcut icon" href="<?= $BASE_URL ?>assets/img/logo.png" type="image/x-icon">
-    <link rel="icon" href="<?= $BASE_URL ?>assets/img/logo.png" type="image/png">
-    <link rel="apple-touch-icon" href="<?= $BASE_URL ?>assets/img/logo.png">
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">

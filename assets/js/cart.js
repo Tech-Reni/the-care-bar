@@ -34,7 +34,18 @@ let cart = {
                 showSuccess('Added to Cart!', 'Product has been added to your cart.');
                 this.loadCart();
             } else {
-                showError('Error', data.message);
+                // Show detailed error including debug info
+                let errorMsg = data.message || 'Failed to add product';
+                if (data.debug) {
+                    errorMsg += '\n\nDebug Info:';
+                    errorMsg += '\nException: ' + data.debug.exception_message;
+                    errorMsg += '\nFile: ' + data.debug.exception_file + ':' + data.debug.exception_line;
+                    if (data.debug.db_error) {
+                        errorMsg += '\nDB Error: ' + data.debug.db_error;
+                    }
+                }
+                console.error('Cart add error:', data);
+                showError('Error', errorMsg);
             }
         } catch (error) {
             console.error('Cart error:', error);
@@ -63,7 +74,13 @@ let cart = {
                 this.loadCart();
                 showSuccess('Removed', 'Product removed from cart');
             } else {
-                showError('Error', data.message);
+                let errorMsg = data.message || 'Failed to remove product';
+                if (data.debug) {
+                    errorMsg += '\n\nDebug: ' + data.debug.exception_message;
+                    if (data.debug.db_error) errorMsg += '\nDB: ' + data.debug.db_error;
+                }
+                console.error('Cart remove error:', data);
+                showError('Error', errorMsg);
             }
         } catch (error) {
             console.error('Cart error:', error);
@@ -91,7 +108,13 @@ let cart = {
                 this.updateCount(data.cart_count);
                 this.loadCart();
             } else {
-                showError('Error', data.message);
+                let errorMsg = data.message || 'Failed to update quantity';
+                if (data.debug) {
+                    errorMsg += '\n\nDebug: ' + data.debug.exception_message;
+                    if (data.debug.db_error) errorMsg += '\nDB: ' + data.debug.db_error;
+                }
+                console.error('Cart update error:', data);
+                showError('Error', errorMsg);
             }
         } catch (error) {
             console.error('Cart error:', error);

@@ -1,0 +1,21 @@
+{
+  "name": "TCB Admin",
+  "short_name": "TCB Admin",
+  "start_url": "/admin/",
+  "scope": "/admin/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#d1558f",
+  "icons": [
+    {
+      "src": "/admin/icons/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/admin/icons/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
