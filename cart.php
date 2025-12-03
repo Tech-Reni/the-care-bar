@@ -16,6 +16,7 @@ $total = $subtotal;
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -29,6 +30,7 @@ $total = $subtotal;
     <link rel="icon" href="<?= $BASE_URL ?>assets/img/logo.png" type="image/png">
     <link rel="apple-touch-icon" href="<?= $BASE_URL ?>assets/img/logo.png">
 </head>
+
 <body>
     <main>
         <!-- PAGE HEADER -->
@@ -53,12 +55,16 @@ $total = $subtotal;
                             </div>
 
                             <?php foreach ($cart_items as $product_id => $item): ?>
-                                <div class="table-row" data-product-id="<?php echo $product_id; ?>">
+                                <?php $max_stock = $item['stock_quantity'] ?? 999; ?>
+
+                                <!-- 1. REMOVED THE IMMEDIATE CLOSING </div> HERE -->
+                                <div class="table-row" data-product-id="<?php echo $product_id; ?>" data-max-stock="<?php echo $max_stock; ?>">
+
                                     <!-- Product Info -->
                                     <div class="col-product">
                                         <div class="product-cell">
-                                            <img src="<?php echo $BASE_URL . 'uploads/' . htmlspecialchars($item['image'], ENT_QUOTES, 'UTF-8'); ?>" 
-                                                 alt="<?php echo htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8'); ?>">
+                                            <img src="<?php echo $BASE_URL . 'uploads/' . htmlspecialchars($item['image'], ENT_QUOTES, 'UTF-8'); ?>"
+                                                alt="<?php echo htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8'); ?>">
                                             <div>
                                                 <h4><?php echo htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8'); ?></h4>
                                                 <p class="sku">ID: #<?php echo $product_id; ?></p>
@@ -95,7 +101,8 @@ $total = $subtotal;
                                             <i class="ri-delete-bin-line"></i>
                                         </button>
                                     </div>
-                                </div>
+
+                                </div> <!-- 2. THIS CLOSING DIV NOW CORRECTLY CLOSES THE TABLE-ROW -->
                             <?php endforeach; ?>
                         </div>
 
@@ -187,30 +194,38 @@ $total = $subtotal;
          * Update item quantity with real-time DOM updates
          */
         async function updateQuantity(productId, newQuantity) {
+            // Get the max stock from the row attribute we added
+            const row = document.querySelector(`[data-product-id="${productId}"]`);
+            const maxStock = parseInt(row.getAttribute('data-max-stock'));
+
             if (newQuantity <= 0) {
                 removeItem(productId);
+            } else if (newQuantity > maxStock) {
+                alert(`Sorry, only ${maxStock} units available in stock.`);
             } else {
                 // Update via cart API
                 await cart.updateQuantity(productId, newQuantity);
-                
+
                 // Update DOM in real-time
                 const row = document.querySelector(`[data-product-id="${productId}"]`);
                 if (row) {
                     // Get item price from existing row
                     const priceText = row.querySelector('.col-price .price').textContent;
                     const price = parseFloat(priceText.replace('₦', '').replace(/,/g, ''));
-                    
+
                     // Update quantity display
                     row.querySelector('.qty-value').textContent = newQuantity;
-                    
+
                     // Update item total
                     const itemTotal = price * newQuantity;
-                    row.querySelector('.col-total .item-total').textContent = '₦' + itemTotal.toLocaleString('en-US', { minimumFractionDigits: 2 });
-                    
+                    row.querySelector('.col-total .item-total').textContent = '₦' + itemTotal.toLocaleString('en-US', {
+                        minimumFractionDigits: 2
+                    });
+
                     // Update +/- button quantities
                     row.querySelector('.qty-btn:first-child').onclick = () => updateQuantity(productId, newQuantity - 1);
                     row.querySelector('.qty-btn:last-child').onclick = () => updateQuantity(productId, newQuantity + 1);
-                    
+
                     // Recalculate and update summary
                     updateSummary();
                 }
@@ -227,16 +242,18 @@ $total = $subtotal;
                 const itemTotal = parseFloat(itemTotalText.replace('₦', '').replace(/,/g, ''));
                 subtotal += itemTotal;
             });
-            
-            const total = subtotal ;
-            
+
+            const total = subtotal;
+
             // Update summary display
-            document.querySelectorAll('.summary-row')[0].querySelector('span:last-child').textContent = 
-                '₦' + subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 });
-            // document.querySelectorAll('.summary-row')[1].querySelector('span:last-child').textContent = 
-            //     '₦' + tax.toLocaleString('en-US', { minimumFractionDigits: 2 });
-            document.querySelectorAll('.summary-row.summary-total')[0].querySelector('span:last-child').textContent = 
-                '₦' + total.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            document.querySelectorAll('.summary-row')[0].querySelector('span:last-child').textContent =
+                '₦' + subtotal.toLocaleString('en-US', {
+                    minimumFractionDigits: 2
+                });
+            document.querySelectorAll('.summary-row.summary-total')[0].querySelector('span:last-child').textContent =
+                '₦' + total.toLocaleString('en-US', {
+                    minimumFractionDigits: 2
+                });
         }
 
         /**
@@ -245,13 +262,13 @@ $total = $subtotal;
         function removeItem(productId) {
             showConfirm('Remove Item?', 'Are you sure you want to remove this item?', async () => {
                 await cart.remove(productId);
-                
+
                 // Remove row from DOM
                 const row = document.querySelector(`[data-product-id="${productId}"]`);
                 if (row) {
                     row.remove();
                     updateSummary();
-                    
+
                     // Check if cart is now empty
                     if (document.querySelectorAll('.table-row').length === 0) {
                         location.reload();
@@ -269,7 +286,7 @@ $total = $subtotal;
                 showError('Error', 'Please enter a promo code');
                 return;
             }
-            
+
             // Placeholder - implement actual promo logic
             showInfo('Promo Code', 'Promo code validation will be implemented soon');
         }
@@ -277,6 +294,7 @@ $total = $subtotal;
 
     <script src="<?php echo $BASE_URL; ?>assets/js/cart.js"></script>
 </body>
+
 </html>
 
 <?php include __DIR__ . "/includes/footer.php"; ?>

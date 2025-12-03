@@ -95,7 +95,19 @@ if ($product['category_id']) {
                     <!-- Price -->
                     <div class="product-price">
                         <h2 class="price">₦<?php echo number_format($product['price'], 2); ?></h2>
-                        <p class="availability"><i class="ri-check-double-fill" style="color: var(--success);"></i> In Stock</p>
+                        
+                        <?php 
+                        $stock = $product['stock_quantity'] ?? 0;
+                        $is_out_of_stock = $stock <= 0;
+                        ?>
+
+                        <p class="availability" style="color: <?php echo $is_out_of_stock ? 'var(--error, red)' : 'var(--success)'; ?>;">
+                            <?php if ($is_out_of_stock): ?>
+                                <i class="ri-close-circle-fill"></i> Out of Stock
+                            <?php else: ?>
+                                <i class="ri-check-double-fill"></i> In Stock (<?= $stock ?> left)
+                            <?php endif; ?>
+                        </p>
                     </div>
 
                     <!-- Description -->
@@ -107,17 +119,26 @@ if ($product['category_id']) {
                     <!-- Add to Cart -->
                     <div class="product-actions">
                         <div class="quantity-selector">
-                            <button id="decreaseQty" class="qty-btn">
+                            <button id="decreaseQty" class="qty-btn" <?php echo $is_out_of_stock ? 'disabled' : ''; ?>>
                                 <i class="ri-subtract-line"></i>
                             </button>
-                            <input type="number" id="quantity" value="1" min="1" max="999">
-                            <button id="increaseQty" class="qty-btn">
+                            <!-- Store max stock in data attribute -->
+                            <input type="number" id="quantity" value="1" min="1" 
+                                   max="<?php echo $stock; ?>" 
+                                   data-max-stock="<?php echo $stock; ?>"
+                                   <?php echo $is_out_of_stock ? 'disabled' : ''; ?>>
+                            
+                            <button id="increaseQty" class="qty-btn" <?php echo $is_out_of_stock ? 'disabled' : ''; ?>>
                                 <i class="ri-add-line"></i>
                             </button>
                         </div>
 
-                        <button id="addToCartBtn" class="btn btn-large add-to-cart-btn" data-product-id="<?php echo $product['id']; ?>">
-                            <i class="ri-shopping-cart-line"></i> Add to Cart
+                        <button id="addToCartBtn" class="btn btn-large add-to-cart-btn" 
+                                data-product-id="<?php echo $product['id']; ?>"
+                                <?php echo $is_out_of_stock ? 'disabled' : ''; ?>
+                                style="<?php echo $is_out_of_stock ? 'opacity: 0.5; cursor: not-allowed;' : ''; ?>">
+                            <i class="ri-shopping-cart-line"></i> 
+                            <?php echo $is_out_of_stock ? 'Out of Stock' : 'Add to Cart'; ?>
                         </button>
                     </div>
 
@@ -208,19 +229,35 @@ if ($product['category_id']) {
 
     <script>
         // Quantity controls
+        const qtyInput = document.getElementById('quantity');
+        const maxStock = parseInt(qtyInput.getAttribute('data-max-stock')) || 0;
+
         document.getElementById('decreaseQty').addEventListener('click', () => {
-            const qty = document.getElementById('quantity');
-            if (qty.value > 1) qty.value--;
+            if (qtyInput.value > 1) qtyInput.value--;
         });
 
         document.getElementById('increaseQty').addEventListener('click', () => {
-            document.getElementById('quantity').value++;
+            let currentVal = parseInt(qtyInput.value);
+            // CHECK IF USER QUANTITY IS MORE THAN AVAILABLE STOCK
+            if (currentVal < maxStock) {
+                qtyInput.value++;
+            } else {
+                alert('Sorry, you cannot add more than the available stock.');
+            }
         });
 
         // Add to cart with quantity
         document.getElementById('addToCartBtn').addEventListener('click', function() {
+            if(maxStock <= 0) return; // Prevent click if out of stock
+            
             const productId = this.getAttribute('data-product-id');
             const quantity = parseInt(document.getElementById('quantity').value);
+            
+            if(quantity > maxStock) {
+                alert('Selected quantity exceeds available stock.');
+                return;
+            }
+            
             cart.add(parseInt(productId), quantity);
         });
 

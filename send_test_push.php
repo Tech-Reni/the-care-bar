@@ -2,7 +2,7 @@
 header('Content-Type: application/json');
 
 $APP_ID    = "7e511f6c-c42e-4e6f-a989-b7eb636981bd";
-$API_KEY   = "os_v2_app_pzir63gefzhg7kmjw7vwg2mbxwt73gzmlfxe6pn6xko43y2zcazxxomawfe5cgfhnc7vxx7nyszq4cwfy6cs4q6zqtjz4d7uk6uajbi"; 
+$API_KEY   = "os_v2_app_pzir63gefzhg7kmjw7vwg2mbxuw5fkwgb3peeammsrqeru76byresteqwxx3tf7ucszixn3k2awo22uv2k45upx2h53z4ilxioj4eei"; 
 
 $payload = [
     "app_id" => $APP_ID,

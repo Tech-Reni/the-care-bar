@@ -376,14 +376,15 @@ function createProduct($data)
  * @param array $data Product data
  * @return bool Success
  */
-function updateProduct($id, $data)
-{
+function updateProduct($id, $data){
     global $conn;
 
     $id = (int)$id;
     $name = sanitizeInput($data['name'] ?? '');
     $description = $data['description'] ?? '';
     $price = filter_var($data['price'] ?? 0, FILTER_VALIDATE_FLOAT);
+    // 1. Get stock quantity (default to 0 if missing)
+    $stock_quantity = isset($data['stock_quantity']) ? (int)$data['stock_quantity'] : 0;
     $category_id = validateInt($data['category_id'] ?? null);
     $image = $data['image'] ?? '';
 
@@ -391,14 +392,16 @@ function updateProduct($id, $data)
         return false;
     }
 
-    $query = "UPDATE products SET category_id=?, name=?, description=?, price=?, image=? WHERE id=?";
+    // 2. Added 'stock_quantity=?' to the SQL query
+    $query = "UPDATE products SET category_id=?, name=?, description=?, price=?, stock_quantity=?, image=? WHERE id=?";
 
     $stmt = $conn->prepare($query);
     if (!$stmt) {
         return false;
     }
 
-    $stmt->bind_param("issdsi", $category_id, $name, $description, $price, $image, $id);
+    $stmt->bind_param("issdisi", $category_id, $name, $description, $price, $stock_quantity, $image, $id);
+    
     $result = $stmt->execute();
 
     $stmt->close();

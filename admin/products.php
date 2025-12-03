@@ -72,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'name' => $_POST['name'] ?? '',
             'description' => $_POST['description'] ?? '',
             'price' => $_POST['price'] ?? 0,
+            'stock_quantity' => isset($_POST['stock_quantity']) ? (int)$_POST['stock_quantity'] : 0,
             'category_id' => $_POST['category_id'] ?? null,
             'image' => $image_filename
         ];
@@ -154,6 +155,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label for="price">Price (₦) *</label>
                         <input type="number" id="price" name="price" value="<?php echo htmlspecialchars($product['price'] ?? '', ENT_QUOTES); ?>" step="0.01" min="0" required>
                     </div>
+                    <div class="form-group">
+                        <label for="stock_quantity">Stock Quantity *</label>
+                        <input type="number" id="stock_quantity" name="stock_quantity" 
+                               value="<?php echo htmlspecialchars($product['stock_quantity'] ?? '0', ENT_QUOTES); ?>" 
+                               step="1" min="0" required>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -212,6 +219,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <th>Product Name</th>
                         <th>Category</th>
                         <th>Price</th>
+                        <th>Stock</th>
                         <th>Created</th>
                         <th style="text-align: center;">Actions</th>
                     </tr>
@@ -223,6 +231,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <td><?php echo htmlspecialchars($prod['name']); ?></td>
                             <td><?php echo htmlspecialchars($prod['category_name'] ?? 'Uncategorized'); ?></td>
                             <td>₦<?php echo number_format($prod['price'], 2); ?></td>
+                            <td>
+                                <?php if ($prod['stock_quantity'] > 0): ?>
+                                    <span style="color: var(--success); font-weight: bold;"><?php echo $prod['stock_quantity']; ?></span>
+                                <?php else: ?>
+                                    <span style="color: #e63946; font-weight: bold;">Out of Stock</span>
+                                <?php endif; ?>
+                            </td>
                             <td><?php echo date('M d, Y', strtotime($prod['created_at'])); ?></td>
                             <td style="text-align: center;">
                                 <a href="<?php echo $BASE_URL; ?>admin/products.php?action=edit&id=<?php echo $prod['id']; ?>" class="btn btn-sm btn-outline">
