@@ -82,7 +82,7 @@ if ($product['category_id']) {
                                 <i class="ri-star-fill"></i>
                                 <i class="ri-star-fill"></i>
                                 <i class="ri-star-fill"></i>
-                                <i class="ri-star-half-line"></i>
+                                <i class="ri-star-fill"></i>
                             </div>
                             <span class="rating-text">(<?php echo (int)($product['review_no'] ?? 0); ?> reviews)</span>
                             <button id="openRating" class="btn btn-sm btn-pink" style="border-radius:12px;">
@@ -123,13 +123,6 @@ if ($product['category_id']) {
 
                     <!-- Product Meta -->
                     <div class="product-meta">
-                        <div class="meta-item">
-                            <i class="ri-truck-line"></i>
-                            <div>
-                                <strong>Free Shipping</strong>
-                                <p>On orders over ₦10,000</p>
-                            </div>
-                        </div>
                         <div class="meta-item">
                             <i class="ri-shield-check-line"></i>
                             <div>

@@ -5,16 +5,13 @@ include __DIR__ . "/includes/header.php";
 // Get cart data
 $cart_items = isset($_SESSION['cart']) ? $_SESSION['cart'] : [];
 $subtotal = 0;
-$tax = 0;
 
 // Calculate totals
 foreach ($cart_items as $item) {
     $subtotal += $item['price'] * $item['quantity'];
 }
 
-// Calculate tax (5%)
-$tax = $subtotal * 0.05;
-$total = $subtotal + $tax;
+$total = $subtotal;
 ?>
 
 <!DOCTYPE html>
@@ -135,7 +132,7 @@ $total = $subtotal + $tax;
                                 <span>₦<?php echo number_format($subtotal, 2); ?></span>
                             </div>
 
-                            <div class="summary-row">
+                            <!-- <div class="summary-row">
                                 <span>Tax (5%)</span>
                                 <span>₦<?php echo number_format($tax, 2); ?></span>
                             </div>
@@ -143,7 +140,7 @@ $total = $subtotal + $tax;
                             <div class="summary-row">
                                 <span>Shipping</span>
                                 <span class="free">FREE</span>
-                            </div>
+                            </div> -->
 
                             <div class="summary-divider"></div>
 
@@ -231,14 +228,13 @@ $total = $subtotal + $tax;
                 subtotal += itemTotal;
             });
             
-            const tax = subtotal * 0.10;
-            const total = subtotal + tax;
+            const total = subtotal ;
             
             // Update summary display
             document.querySelectorAll('.summary-row')[0].querySelector('span:last-child').textContent = 
                 '₦' + subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 });
-            document.querySelectorAll('.summary-row')[1].querySelector('span:last-child').textContent = 
-                '₦' + tax.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            // document.querySelectorAll('.summary-row')[1].querySelector('span:last-child').textContent = 
+            //     '₦' + tax.toLocaleString('en-US', { minimumFractionDigits: 2 });
             document.querySelectorAll('.summary-row.summary-total')[0].querySelector('span:last-child').textContent = 
                 '₦' + total.toLocaleString('en-US', { minimumFractionDigits: 2 });
         }

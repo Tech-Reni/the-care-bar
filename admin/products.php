@@ -1,4 +1,7 @@
 <?php
+// 1. START BUFFERING: This prevents HTML from sending immediately
+ob_start();
+
 $page_title = 'Products';
 require_once __DIR__ . '/header.php';
 
@@ -6,7 +9,8 @@ require_once __DIR__ . '/header.php';
 $action = sanitizeInput($_GET['action'] ?? '');
 $product_id = validateInt($_GET['id'] ?? null);
 
-$product = null;
+// 2. FIX: Initialize as empty array to prevent "null" errors
+$product = []; 
 $categories = getCategories();
 $products = [];
 $error = '';
@@ -19,6 +23,7 @@ $products = getAllProducts(100, 0);
 if ($action === 'edit' && $product_id) {
     $product = getProductById($product_id);
     if (!$product) {
+        // Redirection works now because of ob_start()
         header("Location: " . $BASE_URL . "admin/products.php");
         exit;
     }
@@ -35,24 +40,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
             $upload_dir = __DIR__ . '/../uploads/';
             
-            // Create uploads directory if it doesn't exist
             if (!is_dir($upload_dir)) {
                 mkdir($upload_dir, 0755, true);
             }
 
-            // Validate file type (only images)
             $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
             $file_mime = mime_content_type($_FILES['image']['tmp_name']);
             
             if (!in_array($file_mime, $allowed_types)) {
                 $error = 'Invalid file type. Only JPEG, JPG, PNG, GIF, and WebP images are allowed.';
             } else {
-                // Generate unique filename
                 $file_ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
                 $image_filename = 'product_' . time() . '_' . rand(1000, 9999) . '.' . strtolower($file_ext);
                 $upload_path = $upload_dir . $image_filename;
 
-                // Delete old image if updating
                 if ($product_id && isset($product['image']) && !empty($product['image'])) {
                     $old_image_path = $upload_dir . $product['image'];
                     if (file_exists($old_image_path)) {
@@ -60,7 +61,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
-                // Move uploaded file
                 if (!move_uploaded_file($_FILES['image']['tmp_name'], $upload_path)) {
                     $error = 'Failed to upload image. Please try again.';
                     $image_filename = $product['image'] ?? '';
@@ -83,6 +83,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Update
                 if (updateProduct($product_id, $product_data)) {
                     $success = 'Product updated successfully!';
+                    // Optional: Redirect after edit to see changes clearly
+                    // header("Location: " . $BASE_URL . "admin/products.php");
+                    // exit;
                     $product = getProductById($product_id);
                 } else {
                     $error = 'Failed to update product.';
@@ -92,7 +95,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $new_id = createProduct($product_data);
                 if ($new_id) {
                     $success = 'Product created successfully!';
-                    header("Location: " . $BASE_URL . "admin/products.php?action=edit&id=" . $new_id);
+                    // 3. THIS REDIRECT WILL NOW WORK
+                    header("Location: " . $BASE_URL . "admin/products.php");
                     exit;
                 } else {
                     $error = 'Failed to create product.';
@@ -103,6 +107,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (deleteProduct($product_id)) {
             $success = 'Product deleted successfully!';
             $product = null;
+            // Redirect to clear query parameters
+            header("Location: " . $BASE_URL . "admin/products.php");
+            exit;
         } else {
             $error = 'Failed to delete product.';
         }
@@ -279,5 +286,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 </script>
 
-<?php require_once __DIR__ . '/footer.php'; ?>
-<?php include __DIR__ . '/../includes/modal.php'; ?>
+<?php 
+require_once __DIR__ . '/footer.php';
+include __DIR__ . '/../includes/modal.php'; 
+
+// 4. FLUSH BUFFER: Send the HTML to the browser now that we are done
+ob_end_flush();
+?>

@@ -15,8 +15,8 @@ $subtotal = 0;
 foreach ($cart_items as $item) {
     $subtotal += $item['price'] * $item['quantity'];
 }
-$tax = $subtotal * 0.05;
-$total = $subtotal + $tax;
+
+$total = $subtotal;
 ?>
 
 <!DOCTYPE html>
@@ -168,7 +168,7 @@ $total = $subtotal + $tax;
                             <span>₦<?php echo number_format($subtotal, 2); ?></span>
                         </div>
 
-                        <div class="summary-item">
+                        <!-- <div class="summary-item">
                             <span>Tax (5%)</span>
                             <span>₦<?php echo number_format($tax, 2); ?></span>
                         </div>
@@ -176,7 +176,7 @@ $total = $subtotal + $tax;
                         <div class="summary-row">
                             <span>Shipping</span>
                             <span class="free">FREE</span>
-                        </div>
+                        </div> -->
 
                         <div class="summary-divider"></div>
 
@@ -211,7 +211,6 @@ $total = $subtotal + $tax;
             formData.append('action', 'create');
             formData.append('items', JSON.stringify(CART_ITEMS));
             formData.append('subtotal', '<?php echo $subtotal; ?>');
-            formData.append('tax', '<?php echo $tax; ?>');
             formData.append('shipping', '0');
             formData.append('total', '<?php echo $total; ?>');
             // Add payment details summary (do NOT store sensitive full card data in production)
@@ -231,8 +230,6 @@ $total = $subtotal + $tax;
             }).then(r => r.json()).then(async data => {
                 if (data.success) {
                     showSuccess('Order Placed!', 'Thank you. Your order has been received.');
-
-                    <?php file_get_contents("https://the-care-bar.com/send_test_push.php"); ?>
 
                     // Clear cart on server
                     const clearForm = new FormData();

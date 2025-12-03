@@ -397,7 +397,7 @@ body {
 .table-container {
   background: var(--white);
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: scroll;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   margin-bottom: 30px;
 }
