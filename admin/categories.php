@@ -32,6 +32,7 @@ if ($action === 'edit' && $category_id) {
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = sanitizeInput($_POST['action'] ?? '');
+    $category_id = validateInt($_POST['id'] ?? null); 
     $name = sanitizeInput($_POST['name'] ?? '');
 
     if ($action === 'save') {
@@ -58,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Reload categories
         $categories = getCategories();
+
     } elseif ($action === 'delete' && $category_id) {
         if (deleteCategory($category_id)) {
             $success = 'Category deleted successfully!';

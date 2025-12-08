@@ -32,6 +32,7 @@ if ($action === 'edit' && $product_id) {
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = sanitizeInput($_POST['action'] ?? '');
+    $product_id = validateInt($_POST['id'] ?? null); 
 
     if ($action === 'save') {
         $image_filename = $product['image'] ?? '';
@@ -81,22 +82,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Product name and price are required.';
         } elseif (empty($error)) {
             if ($product_id) {
-                // Update
                 if (updateProduct($product_id, $product_data)) {
                     $success = 'Product updated successfully!';
-                    // Optional: Redirect after edit to see changes clearly
-                    // header("Location: " . $BASE_URL . "admin/products.php");
-                    // exit;
                     $product = getProductById($product_id);
                 } else {
                     $error = 'Failed to update product.';
                 }
             } else {
-                // Create
                 $new_id = createProduct($product_data);
                 if ($new_id) {
                     $success = 'Product created successfully!';
-                    // 3. THIS REDIRECT WILL NOW WORK
                     header("Location: " . $BASE_URL . "admin/products.php");
                     exit;
                 } else {
@@ -104,12 +99,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
-    } elseif ($action === 'delete' && $product_id) {
+    } elseif ($action === 'delete' && $product_id) { 
         if (deleteProduct($product_id)) {
+            header("Location: " . $BASE_URL . "admin/products.php");
             $success = 'Product deleted successfully!';
             $product = null;
-            // Redirect to clear query parameters
-            header("Location: " . $BASE_URL . "admin/products.php");
             exit;
         } else {
             $error = 'Failed to delete product.';

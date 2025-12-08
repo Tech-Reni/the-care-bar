@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/db.php';
 
+
 // Get Cart Count from Session
 $cart_count = isset($_SESSION['cart']) ? count($_SESSION['cart']) : 0;
 

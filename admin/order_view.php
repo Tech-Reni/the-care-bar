@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/header.php';
+// require Composer autoload (adjust path if your entries differ)
+require_once __DIR__ . '/../vendor/autoload.php';
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $order = getOrderById($id);
@@ -31,6 +33,7 @@ $statusBgColor = $statusBgColors[$order['status']] ?? '#f5f5f5';
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -439,6 +442,7 @@ $statusBgColor = $statusBgColors[$order['status']] ?? '#f5f5f5';
         }
     </style>
 </head>
+
 <body>
     <div class="order-view-container">
         <!-- Header -->
@@ -452,20 +456,23 @@ $statusBgColor = $statusBgColors[$order['status']] ?? '#f5f5f5';
             </div>
             <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                 <div class="status-badge">
-                    <i class="ri-<?php 
-                        echo match($order['status']) {
-                            'Pending' => 'time-line',
-                            'Processing' => 'progress-4-line',
-                            'Completed' => 'check-double-line',
-                            'Cancelled' => 'close-circle-line',
-                            default => 'question-mark'
-                        };
-                    ?>"></i>
+                    <i class="ri-<?php
+                                    echo match ($order['status']) {
+                                        'Pending' => 'time-line',
+                                        'Processing' => 'progress-4-line',
+                                        'Completed' => 'check-double-line',
+                                        'Cancelled' => 'close-circle-line',
+                                        default => 'question-mark'
+                                    };
+                                    ?>"></i>
                     <?php echo htmlspecialchars($order['status']); ?>
                 </div>
                 <a href="orders.php" class="back-btn">
                     <i class="ri-arrow-left-line"></i>
                     Back to Orders
+                </a>
+                <a href="download_receipt.php?id=<?php echo $order['id']; ?>" target="_blank" class="btn-download">
+                    <i class="ri-printer-line"></i> Download Receipt (PDF)
                 </a>
             </div>
         </div>
@@ -517,15 +524,17 @@ $statusBgColor = $statusBgColors[$order['status']] ?? '#f5f5f5';
                             </tr>
                         </thead>
                         <tbody>
-                        <?php foreach ($items as $i => $it): ?>
-                            <tr>
-                                <td><strong><?php echo $i+1; ?></strong></td>
-                                <td><?php echo htmlspecialchars($it['name']); ?></td>
-                                <td>₦<?php echo number_format($it['price'], 2); ?></td>
-                                <td><div class="item-qty"><?php echo (int)$it['quantity']; ?></div></td>
-                                <td><strong>₦<?php echo number_format($it['total'], 2); ?></strong></td>
-                            </tr>
-                        <?php endforeach; ?>
+                            <?php foreach ($items as $i => $it): ?>
+                                <tr>
+                                    <td><strong><?php echo $i + 1; ?></strong></td>
+                                    <td><?php echo htmlspecialchars($it['name']); ?></td>
+                                    <td>₦<?php echo number_format($it['price'], 2); ?></td>
+                                    <td>
+                                        <div class="item-qty"><?php echo (int)$it['quantity']; ?></div>
+                                    </td>
+                                    <td><strong>₦<?php echo number_format($it['total'], 2); ?></strong></td>
+                                </tr>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
@@ -573,16 +582,16 @@ $statusBgColor = $statusBgColors[$order['status']] ?? '#f5f5f5';
                         <div class="form-group">
                             <label class="form-label">Order Status</label>
                             <select name="status" class="form-select">
-                                <option value="Pending" <?php echo $order['status']==='Pending'? 'selected':''; ?>>
+                                <option value="Pending" <?php echo $order['status'] === 'Pending' ? 'selected' : ''; ?>>
                                     ⏱️ Pending
                                 </option>
-                                <option value="Processing" <?php echo $order['status']==='Processing'? 'selected':''; ?>>
+                                <option value="Processing" <?php echo $order['status'] === 'Processing' ? 'selected' : ''; ?>>
                                     ⚙️ Processing
                                 </option>
-                                <option value="Completed" <?php echo $order['status']==='Completed'? 'selected':''; ?>>
+                                <option value="Completed" <?php echo $order['status'] === 'Completed' ? 'selected' : ''; ?>>
                                     ✓ Completed
                                 </option>
-                                <option value="Cancelled" <?php echo $order['status']==='Cancelled'? 'selected':''; ?>>
+                                <option value="Cancelled" <?php echo $order['status'] === 'Cancelled' ? 'selected' : ''; ?>>
                                     ✕ Cancelled
                                 </option>
                             </select>
@@ -602,14 +611,14 @@ $statusBgColor = $statusBgColors[$order['status']] ?? '#f5f5f5';
                     </div>
                     <div class="payment-info">
                         <div class="payment-method">
-                            <i class="ri-<?php 
-                                echo match($order['payment_method']) {
-                                    'card' => 'bank-card-line',
-                                    'bank' => 'building-line',
-                                    'ussd' => 'smartphone-line',
-                                    default => 'money-dollar-circle-line'
-                                };
-                            ?>"></i>
+                            <i class="ri-<?php
+                                            echo match ($order['payment_method']) {
+                                                'card' => 'bank-card-line',
+                                                'bank' => 'building-line',
+                                                'ussd' => 'smartphone-line',
+                                                default => 'money-dollar-circle-line'
+                                            };
+                                            ?>"></i>
                             <div>
                                 <div class="info-label">Method</div>
                                 <div class="info-value" style="text-transform: capitalize;">
@@ -629,6 +638,7 @@ $statusBgColor = $statusBgColors[$order['status']] ?? '#f5f5f5';
         </div>
     </div>
 </body>
+
 </html>
 
 <?php require_once __DIR__ . '/footer.php';

@@ -10,7 +10,7 @@ if (str_contains($_SERVER['HTTP_HOST'], 'localhost')) {
     $servername = "localhost";
     $username = "root";
     $password = "";
-    $dbname = "thecarebar";
+    $dbname = "thecarebar"; 
 
 } else {
     $BASE_URL = '../'; 

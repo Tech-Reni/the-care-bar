@@ -12,7 +12,33 @@ $featured_products = getRandomProducts(5);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Care Bar - Home</title>
+    <!-- 🟢 BASIC META -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>The Care Bar - Facials, Oral Care, Accessories & Gift Sets</title>
+
+    <meta name="description" content="The Care Bar is your trusted shop for premium facials, oral care essentials, beauty accessories, luxury gift sets, custom packaging and importation services. Shop quality products for modern personal care and brand needs.">
+
+    <meta name="keywords" content="The Care Bar, facials, oral care, beauty accessories, gift sets, packaging solutions, importation services, skincare, teeth whitening, beauty store, self care products, cosmetics accessories">
+
+    <meta name="author" content="The Care Bar">
+    <meta name="robots" content="index, follow">
+    <meta name="googlebot" content="index, follow">
+
+    <!-- 🟡 FAVICON -->
+    <link rel="icon" href="https://the-care-bar.com/assets/img/logo.png" type="image/x-icon">
+    <link rel="apple-touch-icon" href="https://the-care-bar.com/assets/img/logo.png">
+
+    <!-- 🟣 OPEN GRAPH / FACEBOOK / WHATSAPP -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="The Care Bar - Facials, Oral Care, Accessories & Gift Sets">
+    <meta property="og:description" content="Shop premium facials, oral care essentials, beauty accessories, curated gift sets, packaging solutions and professional importation services at The Care Bar.">
+    <meta property="og:image" content="https://the-care-bar.com/assets/images/logo.png">
+    <meta property="og:url" content="https://the-care-bar.com/">
+    <meta property="og:site_name" content="The Care Bar">
+
     <link rel="stylesheet" href="<?php echo $BASE_URL; ?>assets/css/style.css">
     <link rel="stylesheet" href="<?php echo $BASE_URL; ?>assets/css/home.css">
 
