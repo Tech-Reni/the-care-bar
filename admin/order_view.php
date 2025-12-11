@@ -1,8 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/header.php';
-// require Composer autoload (adjust path if your entries differ)
-require_once __DIR__ . '/../vendor/autoload.php';
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $order = getOrderById($id);
@@ -50,6 +48,7 @@ $statusBgColor = $statusBgColors[$order['status']] ?? '#f5f5f5';
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
             padding: 20px;
+            background: #f8f9fa;
         }
 
         .order-view-container {
@@ -417,13 +416,32 @@ $statusBgColor = $statusBgColors[$order['status']] ?? '#f5f5f5';
 
         /* Responsive */
         @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
             .order-header {
+                padding: 20px;
                 flex-direction: column;
                 align-items: flex-start;
+                gap: 15px;
+            }
+
+            .order-header-left h1 {
+                font-size: 24px;
+            }
+
+            .order-header-left i {
+                font-size: 28px;
             }
 
             .customer-info {
                 grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .info-item {
+                padding: 12px;
             }
 
             .items-table th,
@@ -432,12 +450,48 @@ $statusBgColor = $statusBgColors[$order['status']] ?? '#f5f5f5';
                 font-size: 12px;
             }
 
-            .order-header-left h1 {
-                font-size: 22px;
+            .summary-row {
+                font-size: 13px;
+                padding: 10px 0;
             }
 
             .summary-total .summary-value {
                 font-size: 20px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .card-title {
+                font-size: 16px;
+            }
+
+            .back-btn,
+            .btn-download {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .order-header-left h1 {
+                font-size: 20px;
+            }
+
+            .status-badge {
+                font-size: 12px;
+                padding: 8px 12px;
+            }
+
+            .items-table th,
+            .items-table td {
+                padding: 8px;
+                font-size: 11px;
+            }
+
+            .summary-total .summary-value {
+                font-size: 18px;
             }
         }
     </style>
@@ -570,38 +624,7 @@ $statusBgColor = $statusBgColors[$order['status']] ?? '#f5f5f5';
                     </div>
                 </div>
 
-                <!-- Status Update -->
-                <!-- <div class="card" style="margin-top: 25px; background: white; border-top: 3px solid #FFA500;">
-                    <div class="card-title">
-                        <i class="ri-refresh-line"></i>
-                        Update Status
-                    </div>
-                    <form method="post" action="orders.php" class="status-form">
-                        <input type="hidden" name="action" value="update_status">
-                        <input type="hidden" name="order_id" value="<?php echo (int)$order['id']; ?>">
-                        <div class="form-group">
-                            <label class="form-label">Order Status</label>
-                            <select name="status" class="form-select">
-                                <option value="Pending" <?php echo $order['status'] === 'Pending' ? 'selected' : ''; ?>>
-                                    ⏱️ Pending
-                                </option>
-                                <option value="Processing" <?php echo $order['status'] === 'Processing' ? 'selected' : ''; ?>>
-                                    ⚙️ Processing
-                                </option>
-                                <option value="Completed" <?php echo $order['status'] === 'Completed' ? 'selected' : ''; ?>>
-                                    ✓ Completed
-                                </option>
-                                <option value="Cancelled" <?php echo $order['status'] === 'Cancelled' ? 'selected' : ''; ?>>
-                                    ✕ Cancelled
-                                </option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn-update">
-                            <i class="ri-save-line"></i>
-                            Update Status
-                        </button>
-                    </form>
-                </div> -->
+                
 
                 <!-- Payment Information -->
                 <div class="card" style="margin-top: 25px; background: white; border-top: 3px solid #4CAF50;">

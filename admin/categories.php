@@ -99,6 +99,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <form method="POST">
                 <input type="hidden" name="action" value="save">
 
+                 <!-- ADD THIS LINE HERE: -->
+                <input type="hidden" name="id" value="<?php echo $category['id'] ?? ''; ?>"> 
+
                 <div class="form-group">
                     <label for="name">Category Name *</label>
                     <input type="text" id="name" name="name" value="<?php echo htmlspecialchars($category['name'] ?? '', ENT_QUOTES); ?>" required autofocus>
@@ -142,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <a href="<?php echo $BASE_URL; ?>admin/categories.php?action=edit&id=<?php echo $cat['id']; ?>" class="btn btn-sm btn-outline">
                                     <i class="ri-edit-line"></i> Edit
                                 </a>
-                                <form method="POST" style="display: inline;" onsubmit="return confirm('This will reassign products with this category. Continue?');">
+                                <form method="POST" style="display: inline;" class="confirmable" data-confirm-message="This will reassign products with this category. Continue?">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="id" value="<?php echo $cat['id']; ?>">
                                     <button type="submit" class="btn btn-sm btn-danger">
@@ -165,3 +168,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <?php require_once __DIR__ . '/footer.php'; ?>
 <?php include __DIR__ . '/../includes/modal.php'; ?>
+
+<script>
+    (function(){
+        document.querySelectorAll('form.confirmable').forEach(function(form){
+            form.addEventListener('submit', function(e){
+                e.preventDefault();
+                var msg = form.dataset.confirmMessage || 'Are you sure?';
+                showConfirm('Please confirm', msg, function(){ form.submit(); });
+            });
+        });
+    })();
+</script>

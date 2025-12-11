@@ -2,53 +2,127 @@
 require_once __DIR__ . "/includes/db.php";
 include __DIR__ . "/includes/header.php";
 
-// Get product ID from URL
 $product_id = validateInt($_GET['id'] ?? null);
-
 if (!$product_id) {
-    header("Location: " . $BASE_URL . "shop.php");
+    header("Location: shop.php");
     exit;
 }
 
-// Get product details
 $product = getProductById($product_id);
-
 if (!$product) {
-    header("Location: " . $BASE_URL . "shop.php");
+    header("Location: shop.php");
     exit;
 }
 
-// Get related products (same category)
+// Related Products
 $related_products = [];
 if ($product['category_id']) {
     $related_products = getAllProducts(4, 0, $product['category_id']);
-    // Remove current product from related
-    $related_products = array_filter($related_products, function($p) use ($product_id) {
-        return $p['id'] != $product_id;
-    });
+    $related_products = array_filter($related_products, fn($p) => $p['id'] != $product_id);
     $related_products = array_slice($related_products, 0, 3);
 }
+
+// 1. Fetch Extra Gallery Images
+$stmt = $conn->prepare("SELECT * FROM product_images WHERE product_id = ?");
+$stmt->bind_param("i", $product_id);
+$stmt->execute();
+$gallery = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
+
+// 2. Fetch Variants
+$stmtV = $conn->prepare("SELECT * FROM product_variants WHERE product_id = ?");
+$stmtV->bind_param("i", $product_id);
+$stmtV->execute();
+$variants = $stmtV->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmtV->close();
+
+$stock = $product['stock_quantity'] ?? 0;
+$is_out_of_stock = $stock <= 0;
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8'); ?> - The Care Bar</title>
-    <link rel="stylesheet" href="<?php echo $BASE_URL; ?>assets/css/style.css">
-    <link rel="stylesheet" href="<?php echo $BASE_URL; ?>assets/css/product.css">
+    <title><?= htmlspecialchars($product['name']) ?> - The Care Bar</title>
+    <link rel="stylesheet" href="<?= $BASE_URL ?>assets/css/style.css">
+    <link rel="stylesheet" href="<?= $BASE_URL ?>assets/css/product.css">
+    <style>
+        /* Gallery Styles */
+        .gallery-container {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
 
-    <!-- Favicon -->
-    <link rel="icon" href="<?= $BASE_URL ?>assets/img/logo.png" type="image/x-icon">
-    <link rel="shortcut icon" href="<?= $BASE_URL ?>assets/img/logo.png" type="image/x-icon">
-    <link rel="icon" href="<?= $BASE_URL ?>assets/img/logo.png" type="image/png">
-    <link rel="apple-touch-icon" href="<?= $BASE_URL ?>assets/img/logo.png">
+        .gallery-thumb {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            cursor: pointer;
+            object-fit: cover;
+            border: 2px solid transparent;
+            transition: 0.2s;
+            background: #f9f9f9;
+        }
+
+        .gallery-thumb.active,
+        .gallery-thumb:hover {
+            border-color: #E91E63;
+        }
+
+        /* Variant Styles */
+        .variant-section {
+            margin: 20px 0;
+        }
+
+        .variant-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+            color: #555;
+        }
+
+        .variant-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .variant-pill {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            background: #fff;
+        }
+
+        .variant-pill:hover {
+            border-color: #E91E63;
+            color: #E91E63;
+        }
+
+        .variant-pill.selected {
+            background: #E91E63;
+            color: white;
+            border-color: #E91E63;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(233, 30, 99, 0.3);
+        }
+    </style>
 </head>
+
 <body>
     <main>
         <br>
-        <!-- BREADCRUMB -->
         <div class="container breadcrumb-bar">
             <a href="<?php echo $BASE_URL; ?>index.php"><i class="ri-home-4-line"></i> Home</a>
             <span><i class="ri-arrow-right-s-line"></i></span>
@@ -58,44 +132,49 @@ if ($product['category_id']) {
         </div>
         <br>
 
-        <!-- PRODUCT DETAILS -->
         <section class="container product-detail">
             <div class="product-grid">
-                <!-- Product Image -->
+                <!-- LEFT: IMAGES -->
                 <div class="product-image-section">
                     <div class="product-image-main">
-                        <img id="mainImage" src="<?php echo $BASE_URL . 'uploads/' . htmlspecialchars($product['image'], ENT_QUOTES, 'UTF-8'); ?>" 
-                             alt="<?php echo htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8'); ?>">
+                        <img id="mainImage" src="<?= $BASE_URL ?>uploads/<?= htmlspecialchars($product['image']) ?>" alt="Main Product">
+                    </div>
+
+                    <!-- Gallery Thumbs -->
+                    <div class="gallery-container">
+                        <!-- Original -->
+                        <img src="<?= $BASE_URL ?>uploads/<?= htmlspecialchars($product['image']) ?>" class="gallery-thumb active" onclick="swapImage(this)">
+                        <!-- Extras -->
+                        <?php foreach ($gallery as $img): ?>
+                            <img src="<?= $BASE_URL ?>uploads/<?= htmlspecialchars($img['image_path']) ?>" class="gallery-thumb" onclick="swapImage(this)">
+                        <?php endforeach; ?>
                     </div>
                 </div>
 
-                <!-- Product Info -->
+                <!-- RIGHT: INFO -->
                 <div class="product-info-section">
-                    <div class="product-header">
-                        <p class="category-badge"><?php echo htmlspecialchars($product['category_name'] ?? 'Uncategorized', ENT_QUOTES, 'UTF-8'); ?></p>
-                        <h1><?php echo htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8'); ?></h1>
-                        
-                        <!-- Rating (Optional) -->
-                        <div class="rating">
-                            <div class="stars">
-                                <i class="ri-star-fill"></i>
-                                <i class="ri-star-fill"></i>
-                                <i class="ri-star-fill"></i>
-                                <i class="ri-star-fill"></i>
-                                <i class="ri-star-fill"></i>
-                            </div>
-                            <span class="rating-text">(<?php echo (int)($product['review_no'] ?? 0); ?> reviews)</span>
-                            <button id="openRating" class="btn btn-sm btn-pink" style="border-radius:12px;">
-                                <i class="ri-heart-3-line" style="font-size:14px;color:#fff;"></i>
-                                Rate
-                            </button>
+                    <p class="category-badge"><?= htmlspecialchars($product['category_name'] ?? 'General') ?></p>
+                    <h1><?= htmlspecialchars($product['name']) ?></h1>
+
+                    <!-- Rating (Optional) -->
+                    <div class="rating">
+                        <div class="stars">
+                            <i class="ri-star-fill"></i>
+                            <i class="ri-star-fill"></i>
+                            <i class="ri-star-fill"></i>
+                            <i class="ri-star-fill"></i>
+                            <i class="ri-star-fill"></i>
                         </div>
+                        <span class="rating-text">(<?php echo (int)($product['review_no'] ?? 0); ?> reviews)</span>
+                        <button id="openRating" class="btn btn-sm btn-pink" style="border-radius:12px;">
+                            <i class="ri-heart-3-line" style="font-size:14px;color:#fff;"></i>
+                            Rate
+                        </button>
                     </div>
 
-                    <!-- Price -->
+                    <!-- Dynamic Price -->
                     <div class="product-price">
-                        <h2 class="price">₦<?php echo number_format($product['price'], 2); ?></h2>
-                        
+                        <h2 class="price" id="displayPrice">₦<?= number_format($product['price'], 2) ?></h2>
                         <?php 
                         $stock = $product['stock_quantity'] ?? 0;
                         $is_out_of_stock = $stock <= 0;
@@ -110,58 +189,60 @@ if ($product['category_id']) {
                         </p>
                     </div>
 
-                    <!-- Description -->
+                    <!-- Variants Selector -->
+                   <?php if (!empty($variants)): ?>
+                        <div class="variant-section">
+                            <span class="variant-title">Choose Option:</span>
+                            <div class="variant-list">
+                                
+                                <!-- 1. MANUALLY ADD THE "STANDARD" (BASE) OPTION -->
+                                <!-- This uses the Product's original Base Price and has an empty ID -->
+                                <div class="variant-pill selected" 
+                                     data-id="" 
+                                     data-price="<?= $product['price'] ?>"
+                                     onclick="selectVariant(this)">
+                                    Standard
+                                </div>
+
+                                <!-- 2. LOOP THROUGH DATABASE VARIANTS -->
+                                <?php foreach($variants as $var): ?>
+                                    <div class="variant-pill" 
+                                         data-id="<?= $var['id'] ?>" 
+                                         data-price="<?= $var['price'] ?>"
+                                         onclick="selectVariant(this)">
+                                        <?= htmlspecialchars($var['variant_name']) ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            
+                            <!-- Hidden input starts empty (Standard selected by default) -->
+                            <input type="hidden" id="selectedVariantId" value="">
+                        </div>
+                    <?php else: ?>
+                        <input type="hidden" id="selectedVariantId" value="">
+                    <?php endif; ?>
+
                     <div class="product-description">
                         <h3>Description</h3>
-                        <div><?php echo $product['description'] ?? ''; ?></div>
+                        <div><?= $product['description'] ?></div>
                     </div>
 
-                    <!-- Add to Cart -->
                     <div class="product-actions">
                         <div class="quantity-selector">
-                            <button id="decreaseQty" class="qty-btn" <?php echo $is_out_of_stock ? 'disabled' : ''; ?>>
-                                <i class="ri-subtract-line"></i>
-                            </button>
-                            <!-- Store max stock in data attribute -->
-                            <input type="number" id="quantity" value="1" min="1" 
-                                   max="<?php echo $stock; ?>" 
-                                   data-max-stock="<?php echo $stock; ?>"
-                                   <?php echo $is_out_of_stock ? 'disabled' : ''; ?>>
-                            
-                            <button id="increaseQty" class="qty-btn" <?php echo $is_out_of_stock ? 'disabled' : ''; ?>>
-                                <i class="ri-add-line"></i>
-                            </button>
+                            <button id="decreaseQty" class="qty-btn"><i class="ri-subtract-line"></i></button>
+                            <input type="number" id="quantity" value="1" min="1" max="<?= $stock ?>">
+                            <button id="increaseQty" class="qty-btn"><i class="ri-add-line"></i></button>
                         </div>
 
-                        <button id="addToCartBtn" class="btn btn-large add-to-cart-btn" 
-                                data-product-id="<?php echo $product['id']; ?>"
-                                <?php echo $is_out_of_stock ? 'disabled' : ''; ?>
-                                style="<?php echo $is_out_of_stock ? 'opacity: 0.5; cursor: not-allowed;' : ''; ?>">
-                            <i class="ri-shopping-cart-line"></i> 
-                            <?php echo $is_out_of_stock ? 'Out of Stock' : 'Add to Cart'; ?>
+                        <button id="addToCartBtn" class="btn btn-large" <?= $is_out_of_stock ? 'disabled' : '' ?>>
+                            <i class="ri-shopping-cart-line"></i> Add to Cart
                         </button>
-                    </div>
-
-                    <!-- Product Meta -->
-                    <div class="product-meta">
-                        <div class="meta-item">
-                            <i class="ri-shield-check-line"></i>
-                            <div>
-                                <strong>Authentic</strong>
-                                <p>100% Genuine Products</p>
-                            </div>
-                        </div>
-                        <div class="meta-item">
-                            <i class="ri-refresh-line"></i>
-                            <div>
-                                <strong>Easy Returns</strong>
-                                <p>30-day return policy</p>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
         </section>
+
+        <br>
 
         <!-- RELATED PRODUCTS -->
         <?php if (!empty($related_products)): ?>
@@ -173,10 +254,10 @@ if ($product['category_id']) {
                 <div class="grid">
                     <?php foreach ($related_products as $related): ?>
                         <div class="card">
-                            <img src="<?php echo $BASE_URL . 'uploads/' .  htmlspecialchars($related['image'], ENT_QUOTES, 'UTF-8'); ?>" 
-                                 alt="<?php echo htmlspecialchars($related['name'], ENT_QUOTES, 'UTF-8'); ?>">
+                            <img src="<?php echo $BASE_URL . 'uploads/' .  htmlspecialchars($related['image'], ENT_QUOTES, 'UTF-8'); ?>"
+                                alt="<?php echo htmlspecialchars($related['name'], ENT_QUOTES, 'UTF-8'); ?>">
                             <h3><?php echo htmlspecialchars($related['name'], ENT_QUOTES, 'UTF-8'); ?></h3>
-                            <p class="category"><?php echo htmlspecialchars($related['category_name'] ?? 'Uncategorized', ENT_QUOTES, 'UTF-8'); ?></p>
+                            <!-- <p class="category"><?php echo htmlspecialchars($related['category_name'] ?? 'Uncategorized', ENT_QUOTES, 'UTF-8'); ?></p> -->
                             <p class="price">₦<?php echo number_format($related['price'], 2); ?></p>
 
                             <div class="card-actions">
@@ -194,74 +275,82 @@ if ($product['category_id']) {
         <?php endif; ?>
     </main>
 
-    <!-- CART PANEL -->
-    <div id="cart-panel" class="cart-panel hidden">
-        <div class="cart-header">
-            <h3>Your Cart</h3>
-            <button id="close-cart-3" class="close-cart">
-                <i class="ri-close-line"></i>
-            </button>
-        </div>
-
-        <div id="cart-items" class="cart-items">
-            <p class="empty-cart">Your cart is empty</p>
-        </div>
-
-        <div class="cart-footer">
-            <div class="cart-total">
-                <small>Subtotal</small>
-                <strong id="cart-total">₦0</strong>
-            </div>
-
-            <div class="cart-actions">
-                <a href="<?php echo $BASE_URL; ?>cart.php" class="btn">
-                    <i class="ri-shopping-cart-line"></i> View Cart
-                </a>
-                <a href="<?php echo $BASE_URL; ?>checkout.php" id="checkout-btn" class="btn">
-                    <i class="ri-bank-card-line"></i> Checkout
-                </a>
-                <button id="clear-cart" class="btn btn-ghost">
-                    <i class="ri-delete-bin-line"></i> Clear
-                </button>
-            </div>
-        </div>
-    </div>
+    <?php include __DIR__ . "/includes/modal.php"; ?>
 
     <script>
-        // Quantity controls
-        const qtyInput = document.getElementById('quantity');
-        const maxStock = parseInt(qtyInput.getAttribute('data-max-stock')) || 0;
+        // 1. IMAGE SWAPPER
+        function swapImage(img) {
+            document.getElementById('mainImage').src = img.src;
+            document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+            img.classList.add('active');
+        }
 
+        // 2. VARIANT SELECTOR
+        function selectVariant(el) {
+            // Visual Update
+            document.querySelectorAll('.variant-pill').forEach(p => p.classList.remove('selected'));
+            el.classList.add('selected');
+
+            // Data Update
+            const newPrice = parseFloat(el.getAttribute('data-price'));
+            const varId = el.getAttribute('data-id');
+
+            document.getElementById('displayPrice').innerText = '₦' + newPrice.toLocaleString('en-US', {
+                minimumFractionDigits: 2
+            });
+            document.getElementById('selectedVariantId').value = varId;
+        }
+
+        // 3. QUANTITY LOGIC
+        const qtyInput = document.getElementById('quantity');
+        const maxStock = <?= $stock ?>;
         document.getElementById('decreaseQty').addEventListener('click', () => {
             if (qtyInput.value > 1) qtyInput.value--;
         });
-
         document.getElementById('increaseQty').addEventListener('click', () => {
-            let currentVal = parseInt(qtyInput.value);
-            // CHECK IF USER QUANTITY IS MORE THAN AVAILABLE STOCK
-            if (currentVal < maxStock) {
-                qtyInput.value++;
-            } else {
-                alert('Sorry, you cannot add more than the available stock.');
-            }
-        });
-
-        // Add to cart with quantity
-        document.getElementById('addToCartBtn').addEventListener('click', function() {
-            if(maxStock <= 0) return; // Prevent click if out of stock
-            
-            const productId = this.getAttribute('data-product-id');
-            const quantity = parseInt(document.getElementById('quantity').value);
-            
-            if(quantity > maxStock) {
-                alert('Selected quantity exceeds available stock.');
+            const currentQty = parseInt(qtyInput.value);
+            if (currentQty >= maxStock) {
+                showWarning('Stock Limit', `You can only add up to ${maxStock} items.`);
                 return;
             }
-            
-            cart.add(parseInt(productId), quantity);
+            qtyInput.value = currentQty + 1;
         });
 
-        // Rating modal logic
+        // 4. ADD TO CART (Direct Fetch)
+        document.getElementById('addToCartBtn').addEventListener('click', function() {
+            const qty = qtyInput.value;
+            const varId = document.getElementById('selectedVariantId').value;
+            const pid = <?= $product['id'] ?>;
+
+            // Prepare Data
+            const formData = new FormData();
+            formData.append('action', 'add');
+            formData.append('product_id', pid);
+            formData.append('quantity', qty);
+            formData.append('variant_id', varId);
+
+            // Send to Backend
+            fetch('<?= $BASE_URL ?>api/cart.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showSuccess('Added', 'Item added to cart!');
+                        // Update cart count without reload
+                        const cartCountEl = document.getElementById('cartCount');
+                        if (cartCountEl) {
+                            cartCountEl.textContent = data.cart_count;
+                        }
+                    } else {
+                        showError('Error', data.message || 'Failed to add item');
+                    }
+                })
+                .catch(err => console.error(err));
+        });
+
+         // Rating modal logic
         (function(){
             // Create modal HTML
             const ratingModalHtml = `
@@ -355,7 +444,6 @@ if ($product['category_id']) {
 
     <script src="<?php echo $BASE_URL; ?>assets/js/cart.js"></script>
 </body>
-</html>
 
+</html>
 <?php include __DIR__ . "/includes/footer.php"; ?>
-<?php include __DIR__ . "/includes/modal.php"; ?>

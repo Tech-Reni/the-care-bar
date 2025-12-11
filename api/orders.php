@@ -1,28 +1,29 @@
 <?php
-// Prevent HTML errors from breaking JSON
-ini_set('display_errors', 0);
+// api/orders.php
+
+// 1. DISABLE DISPLAY ERRORS (To prevent HTML breaking JSON)
+ini_set('display_errors', 0); 
+// 2. REPORT ALL ERRORS (So we can catch them)
 error_reporting(E_ALL);
 
 require_once __DIR__ . '/../includes/db.php';
 header('Content-Type: application/json');
 
-$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-$action = $_POST['action'] ?? $_GET['action'] ?? '';
+try {
+    $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
-// Check Request Method
-if ($method !== 'POST') {
-    echo json_encode(['success' => false, 'message' => 'Invalid method']);
-    exit;
-}
+    if ($method !== 'POST') {
+        throw new Exception("Invalid HTTP method");
+    }
 
-if ($action === 'create') {
-    // 1. Start Transaction (MySQLi style)
-    // This ensures stock is deducted AND order is created, or NOTHING happens.
-    $conn->begin_transaction();
+    if ($action === 'create') {
+        // Start Transaction
+        $conn->begin_transaction();
 
-    try {
-        // --- Prepare Data for the createOrder function ---
-        // We map the POST data (from checkout.js) to the keys expected by createOrder() in db.php
+        // ----------------------------------------------------
+        // 1. PREPARE DATA
+        // ----------------------------------------------------
         $orderData = [];
         $orderData['order_number']    = 'ORD_' . time() . '_' . rand(1000, 9999);
         $orderData['first_name']      = $_POST['firstName'] ?? '';
@@ -34,112 +35,126 @@ if ($action === 'create') {
         $orderData['state']           = $_POST['state'] ?? '';
         $orderData['zip']             = $_POST['zip'] ?? '';
         $orderData['payment_method']  = $_POST['paymentMethod'] ?? 'card';
-        $orderData['payment_details'] = $_POST['paymentDetails'] ?? '{}'; // JSON string
+        $orderData['payment_details'] = $_POST['paymentDetails'] ?? '{}';
         $orderData['subtotal']        = $_POST['subtotal'] ?? 0;
         $orderData['total']           = $_POST['total'] ?? 0;
         
-        // Decode items
         $items_json = $_POST['items'] ?? '[]';
         $items = json_decode($items_json, true);
-        $orderData['items'] = $items;
-
-        if (empty($items)) {
-            throw new Exception("Your cart is empty.");
-        }
-
-        // ---------------------------------------------------------
-        //  ✅ STEP A: DEDUCT STOCK
-        //  (We do this here because createOrder() doesn't do it)
-        // ---------------------------------------------------------
         
-        // Prepare the deduction statement once
+        if (empty($items)) { throw new Exception("Cart is empty"); }
+
+        // ----------------------------------------------------
+        // 2. DEDUCT STOCK
+        // ----------------------------------------------------
         $sqlDeduct = "UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? AND stock_quantity >= ?";
         $stmtDeduct = $conn->prepare($sqlDeduct);
-
-        if (!$stmtDeduct) {
-            throw new Exception("Database error preparing stock deduction: " . $conn->error);
-        }
+        if (!$stmtDeduct) { throw new Exception("DB Error (Deduct): " . $conn->error); }
 
         foreach ($items as $item) {
-            $product_id = isset($item['id']) ? (int)$item['id'] : 0;
-            $quantity   = (int)$item['quantity'];
+            $pid = (int)$item['id'];
+            $qty = (int)$item['quantity'];
+            if ($qty <= 0) continue;
 
-            if ($quantity <= 0) continue;
-
-            // Bind parameters: integer, integer, integer
-            $stmtDeduct->bind_param("iii", $quantity, $product_id, $quantity);
+            $stmtDeduct->bind_param("iii", $qty, $pid, $qty);
             $stmtDeduct->execute();
 
-            // Check if any row was actually updated
             if ($stmtDeduct->affected_rows === 0) {
-                // Failed to deduct. Either ID is wrong or Stock is too low.
-                // Let's find out the product name to show a nice error.
-                $stmtName = $conn->prepare("SELECT name, stock_quantity FROM products WHERE id = ?");
-                $stmtName->bind_param("i", $product_id);
-                $stmtName->execute();
-                $resName = $stmtName->get_result();
-                $prodData = $resName->fetch_assoc();
-                $stmtName->close();
-
-                $pName = $prodData ? $prodData['name'] : 'Item #' . $product_id;
-                $pStock = $prodData ? $prodData['stock_quantity'] : 0;
-
-                throw new Exception("Insufficient stock for '$pName'. Only $pStock available.");
+                // Determine item name for cleaner error
+                $n = $item['name'] ?? "Item #$pid";
+                throw new Exception("Insufficient stock for: $n");
             }
         }
         $stmtDeduct->close();
 
-        // ---------------------------------------------------------
-        //  ✅ STEP B: CREATE ORDER & ORDER ITEMS
-        //  (Using the function already in your db.php)
-        // ---------------------------------------------------------
+        // ----------------------------------------------------
+        // 3. CREATE ORDER HEADER
+        // ----------------------------------------------------
+        // NOTE: I used 'shipping_cost'. If your DB column is 'shipping', change it below.
+        // NOTE: If you deleted 'user_id' from DB, remove it from here.
+        $sqlOrder = "INSERT INTO orders (order_number, first_name, last_name, email, phone, address, city, state, zip, payment_method, payment_details, subtotal, tax, shipping, total, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         
-        $order_id = createOrder($orderData);
-
-        if (!$order_id) {
-            // Check debug log function if available
-            $debugInfo = function_exists('getOrderDebug') ? json_encode(getOrderDebug()) : 'No debug info';
-            throw new Exception("Failed to save order. " . $debugInfo);
+        $stmtOrder = $conn->prepare($sqlOrder);
+        
+        // !!! DEBUGGER !!!
+        // If this fails, it means a Column Name is wrong in the DB
+        if (!$stmtOrder) {
+            throw new Exception("DB Prepare Error (Orders Table): " . $conn->error);
         }
-
-        // ---------------------------------------------------------
-        //  ✅ STEP C: COMMIT TRANSACTION
-        // ---------------------------------------------------------
-        $conn->commit();
-
-        // Success Response
-        echo json_encode([
-            'success' => true,
-            'message' => 'Order created successfully',
-            'order_id' => $order_id
-        ]);
-
-         // Trigger OneSignal Push
-        @file_get_contents("https://the-care-bar.com/send_test_push.php");
-
-        exit;
-
-    } catch (Exception $e) {
-        // 🛑 ROLLBACK
-        $conn->rollback();
         
-        // Log the actual error for the admin
-        error_log("Order Process Failed: " . $e->getMessage());
+        $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0; 
+        $tax = 0; 
+        $shipping = 0; 
+        
+        $stmtOrder->bind_param("sssssssssssdddd", 
+            $orderData['order_number'], 
+            $orderData['first_name'], 
+            $orderData['last_name'], 
+            $orderData['email'], 
+            $orderData['phone'], 
+            $orderData['address'], 
+            $orderData['city'], 
+            $orderData['state'], 
+            $orderData['zip'],
+            $orderData['payment_method'], 
+            $orderData['payment_details'],
+            $orderData['subtotal'], 
+            $tax, 
+            $shipping, 
+            $orderData['total']
+        );
 
-        echo json_encode([
-            'success' => false,
-            'message' => $e->getMessage()
-        ]);
+        if (!$stmtOrder->execute()) {
+            throw new Exception("Order Execute Failed: " . $stmtOrder->error);
+        }
+        
+        $order_id = $conn->insert_id;
+        $stmtOrder->close();
+
+        // ----------------------------------------------------
+        // 4. CREATE ORDER ITEMS
+        // ----------------------------------------------------
+        $stmtItem = $conn->prepare("INSERT INTO order_items (order_id, product_id, name, price, quantity) VALUES (?, ?, ?, ?, ?)");
+        if (!$stmtItem) { throw new Exception("DB Error (Order Items): " . $conn->error); }
+
+        foreach ($items as $item) {
+            $finalName = $item['name'];
+            if (!empty($item['variant_name'])) {
+                $finalName .= " (" . $item['variant_name'] . ")";
+            }
+
+            $stmtItem->bind_param("iisdi", $order_id, $item['id'], $finalName, $item['price'], $item['quantity']);
+            $stmtItem->execute();
+        }
+        $stmtItem->close();
+
+        // Commit
+        $conn->commit();
+        unset($_SESSION['cart']);
+
+        echo json_encode(['success' => true, 'order_id' => $order_id]);
+        // Trigger OneSignal Push
+        @file_get_contents("https://the-care-bar.com/send_test_push.php");
         exit;
     }
-}
 
-// Clear Cart Action (Optional, matches your JS)
-if ($action === 'clear') {
-    unset($_SESSION['cart']);
-    echo json_encode(['success' => true]);
+    if ($action === 'clear') {
+        unset($_SESSION['cart']);
+        echo json_encode(['success' => true]);
+        exit;
+    }
+
+} catch (Exception $e) {
+    // Rollback if transaction started
+    if (isset($conn) && $conn->connect_errno === 0) {
+        @$conn->rollback();
+    }
+    
+    // RETURN RAW ERROR AS JSON
+    // This will make the error appear in your Checkout Alert Box
+    echo json_encode([
+        'success' => false, 
+        'message' => $e->getMessage() 
+    ]);
     exit;
 }
-
-echo json_encode(['success' => false, 'message' => 'Unknown action']);
-exit;

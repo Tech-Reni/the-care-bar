@@ -3,24 +3,38 @@
 // ================================
 // BASE_URL Logic
 // ================================
-if (str_contains($_SERVER['HTTP_HOST'], 'localhost')) {
-    $BASE_URL = '/TheCareBar/'; 
 
-    // Database (LOCAL)
+// 1. ROBUST BASE_URL LOGIC (Works on all PHP versions)
+$host = $_SERVER['HTTP_HOST'];
+if ($host == 'localhost' || strpos($host, 'localhost') !== false) {
+    // LOCALHOST SETTINGS
+    $BASE_URL = '/TheCareBar/'; 
     $servername = "localhost";
     $username = "root";
     $password = "";
     $dbname = "thecarebar"; 
-
 } else {
-    $BASE_URL = '../'; 
-
-    // Database (LIVE)
+    // LIVE SERVER SETTINGS
+    // Use the full URL to ensure CSS/JS loads correctly from anywhere
+    $BASE_URL = 'https://the-care-bar.com/'; 
+    
     $servername = "mysql.the-care-bar.com";
     $username = "admin_thecarebar";
     $password = "programming123";
     $dbname = "thecarebar";
 }
+
+// 2. DATABASE CONNECTION
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT); // Enable friendly error reporting
+
+try {
+    $conn = new mysqli($servername, $username, $password, $dbname);
+    $conn->set_charset("utf8mb4");
+} catch (mysqli_sql_exception $e) {
+    // This prints the exact database error if connection fails
+    die("Database Connection Failed: " . $e->getMessage());
+}
+
 
 // ================================
 // Database Connection
@@ -158,174 +172,6 @@ function getRandomProducts($limit = 5)
     return $products;
 }
 
-/**
- * Get all products with optional filtering
- * @param int $limit Items per page
- * @param int $offset Pagination offset
- * @param int $category_id Optional category filter
- * @return array Array of products
- */
-function getAllProducts($limit = 12, $offset = 0, $category_id = null)
-{
-    global $conn;
-    $limit = (int)$limit;
-    $offset = (int)$offset;
-    $category_id = $category_id ? (int)$category_id : null;
-
-    $query = "SELECT p.*, c.name as category_name 
-              FROM products p 
-              LEFT JOIN categories c ON p.category_id = c.id";
-
-    if ($category_id) {
-        $query .= " WHERE p.category_id = ?";
-    }
-
-    $query .= " ORDER BY p.created_at DESC LIMIT ? OFFSET ?";
-
-    $stmt = $conn->prepare($query);
-    if (!$stmt) {
-        return [];
-    }
-
-    if ($category_id) {
-        $stmt->bind_param("iii", $category_id, $limit, $offset);
-    } else {
-        $stmt->bind_param("ii", $limit, $offset);
-    }
-
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    $products = [];
-    while ($row = $result->fetch_assoc()) {
-        $products[] = $row;
-    }
-
-    $stmt->close();
-    return $products;
-}
-
-/**
- * Get product by ID
- * @param int $id Product ID
- * @return array|null Product data or null
- */
-function getProductById($id)
-{
-    global $conn;
-    $id = (int)$id;
-
-    $query = "SELECT p.*, c.name as category_name 
-              FROM products p 
-              LEFT JOIN categories c ON p.category_id = c.id 
-              WHERE p.id = ?";
-
-    $stmt = $conn->prepare($query);
-    if (!$stmt) {
-        return null;
-    }
-
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    $product = $result->num_rows > 0 ? $result->fetch_assoc() : null;
-
-    $stmt->close();
-    return $product;
-}
-
-/**
- * Get all categories
- * @param int $limit Optional limit
- * @return array Array of categories
- */
-function getCategories($limit = null)
-{
-    global $conn;
-
-    $query = "SELECT id, name, created_at FROM categories ORDER BY name ASC";
-
-    if ($limit) {
-        $limit = (int)$limit;
-        $query .= " LIMIT ?";
-    }
-
-    $stmt = $conn->prepare($query);
-    if (!$stmt) {
-        return [];
-    }
-
-    if ($limit) {
-        $stmt->bind_param("i", $limit);
-    }
-
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    $categories = [];
-    while ($row = $result->fetch_assoc()) {
-        $categories[] = $row;
-    }
-
-    $stmt->close();
-    return $categories;
-}
-
-/**
- * Get total product count
- * @param int $category_id Optional category filter
- * @return int Total count
- */
-function getProductCount($category_id = null)
-{
-    global $conn;
-
-    $query = "SELECT COUNT(*) as total FROM products";
-
-    if ($category_id) {
-        $category_id = (int)$category_id;
-        $query .= " WHERE category_id = ?";
-    }
-
-    $stmt = $conn->prepare($query);
-    if (!$stmt) {
-        return 0;
-    }
-
-    if ($category_id) {
-        $stmt->bind_param("i", $category_id);
-    }
-
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
-
-    $stmt->close();
-    return (int)$row['total'];
-}
-
-/**
- * Sanitize string input
- * @param string $input User input
- * @return string Sanitized string
- */
-function sanitizeInput($input)
-{
-    return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
-}
-
-/**
- * Validate integer
- * @param mixed $value Value to validate
- * @return int|null Integer or null if invalid
- */
-function validateInt($value)
-{
-    $value = filter_var($value, FILTER_VALIDATE_INT);
-    return $value !== false ? $value : null;
-}
-
 // ================================
 // ADMIN FUNCTIONS
 // ================================
@@ -342,6 +188,7 @@ function createProduct($data)
     $name = sanitizeInput($data['name'] ?? '');
     $description = $data['description'] ?? '';
     $price = filter_var($data['price'] ?? 0, FILTER_VALIDATE_FLOAT);
+    $stock_quantity = isset($data['stock_quantity']) ? (int)$data['stock_quantity'] : 0;
     $category_id = validateInt($data['category_id'] ?? null);
     $image = $data['image'] ?? '';
 
@@ -349,15 +196,15 @@ function createProduct($data)
         return false;
     }
 
-    $query = "INSERT INTO products (category_id, name, description, price, image, created_at) 
-              VALUES (?, ?, ?, ?, ?, NOW())";
+    $query = "INSERT INTO products (category_id, name, description, price, stock_quantity, image, created_at) 
+              VALUES (?, ?, ?, ?, ?, ?, NOW())";
 
     $stmt = $conn->prepare($query);
     if (!$stmt) {
         return false;
     }
 
-    $stmt->bind_param("issds", $category_id, $name, $description, $price, $image);
+    $stmt->bind_param("issdis", $category_id, $name, $description, $price, $stock_quantity, $image);
     $result = $stmt->execute();
 
     if ($result) {

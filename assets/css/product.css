@@ -85,6 +85,7 @@
 }
 
 .category-badge {
+    width: fit-content;
     display: inline-block;
     background: var(--pink-100);
     color: var(--pink-400);

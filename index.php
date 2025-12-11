@@ -1,8 +1,16 @@
 <?php
-require_once __DIR__ . "/includes/db.php";
-include __DIR__ . "/includes/header.php";
+// index.php
 
-// Get 5 random featured products
+// 1. ENABLE ERROR REPORTING (So you see errors instead of a white screen)
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// 2. CORRECT PATHS (Notice the Slash '/')
+require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/header.php';
+
+// Get products
 $featured_products = getRandomProducts(5);
 ?>
 
@@ -217,5 +225,5 @@ $featured_products = getRandomProducts(5);
 
 </html>
 
-<?php include __DIR__ . "/includes/footer.php"; ?>
-<?php include __DIR__ . "/includes/modal.php"; ?>
+<?php require_once __DIR__ . "/includes/footer.php"; ?>
+<?php require_once __DIR__ . "/includes/modal.php"; ?>

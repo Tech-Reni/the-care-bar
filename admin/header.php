@@ -48,20 +48,27 @@ require_once __DIR__ . '/../includes/db.php';
         // Your manual install button trigger
         async function installPWA() {
             if (!deferredPrompt) {
-                alert("Install option not available yet. Try again later.");
+                showInfo('Info', 'Install option not available yet. Try again later.');
                 return;
             }
 
-            deferredPrompt.prompt();
-            const choice = await deferredPrompt.userChoice;
+            // Ask user via modal before triggering the native install prompt
+            showConfirm('Install Admin App', 'Do you want to install the admin app?', async () => {
+                try {
+                    await deferredPrompt.prompt();
+                    const choice = await deferredPrompt.userChoice;
 
-            if (choice.outcome === "accepted") {
-                console.log("APP INSTALLED");
-            } else {
-                console.log("INSTALL DISMISSED");
-            }
-
-            deferredPrompt = null; // clear
+                    if (choice.outcome === 'accepted') {
+                        console.log('APP INSTALLED');
+                    } else {
+                        console.log('INSTALL DISMISSED');
+                    }
+                } catch (err) {
+                    console.error('Install prompt failed:', err);
+                } finally {
+                    deferredPrompt = null; // clear
+                }
+            });
         }
 
         // Register service worker

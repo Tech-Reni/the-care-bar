@@ -41,6 +41,8 @@ $total = $subtotal;
             <p>Complete your purchase</p>
         </div>
 
+        <br>
+
         <div class="container">
             <div class="checkout-layout">
                 <!-- CHECKOUT FORM -->
@@ -96,21 +98,21 @@ $total = $subtotal;
                             <h2>Payment Information</h2>
                             
                             <div class="payment-methods">
-                                <label class="payment-method">
-                                    <input type="radio" name="paymentMethod" value="card" checked>
+                                <!-- <label class="payment-method">
+                                    <input type="radio" name="paymentMethod" value="card">
                                     <span><i class="ri-bank-card-line"></i> Credit/Debit Card</span>
-                                </label>
+                                </label> -->
                                 <label class="payment-method">
-                                    <input type="radio" name="paymentMethod" value="bank">
+                                    <input type="radio" name="paymentMethod" value="bank" checked>
                                     <span><i class="ri-building-line"></i> Bank Transfer</span>
                                 </label>
-                                <label class="payment-method">
+                                <!-- <label class="payment-method">
                                     <input type="radio" name="paymentMethod" value="ussd">
                                     <span><i class="ri-smartphone-line"></i> USSD</span>
-                                </label>
+                                </label> -->
                             </div>
 
-                            <div id="cardPayment" class="payment-details">
+                            <!-- <div id="cardPayment" class="payment-details">
                                 <div class="form-group">
                                     <label for="cardName">Cardholder Name *</label>
                                     <input type="text" id="cardName" name="cardName">
@@ -131,7 +133,7 @@ $total = $subtotal;
                                         <input type="text" id="cardCVC" name="cardCVC" placeholder="000">
                                     </div>
                                 </div>
-                            </div>
+                            </div> -->
                         </div>
 
                         <!-- Terms -->
@@ -185,7 +187,7 @@ $total = $subtotal;
                             <span>₦<?php echo number_format($total, 2); ?></span>
                         </div>
 
-                        <button form="checkoutForm" type="submit" class="btn btn-checkout">
+                        <button type="button" class="btn btn-checkout" onclick="showBankModal()">
                             <i class="ri-check-line"></i> Complete Purchase
                         </button>
 
@@ -198,26 +200,82 @@ $total = $subtotal;
         </div>
     </main>
 
+    <!-- Bank Transfer Modal -->
+    <div id="bankModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div class="modal-content" style="background:white; padding:30px; border-radius:10px; max-width:600px; width:90%; text-align:center;">
+            <h3>Bank Transfer Details</h3>
+            <p>Please transfer ₦<?php echo number_format($total, 2); ?> to the following account:</p>
+            <div style="margin:20px 0; padding:15px; background:#f9f9f9; border-radius:8px;">
+                <p><strong>Bank Name:</strong> UBA</p>
+                <p><strong>Account Number:</strong> 2324497889 <button onclick="copyToClipboard('2324497889')" style="margin-left:10px; padding:5px 10px; background:#E91E63; color:white; border:none; border-radius:4px; cursor:pointer;">Copy</button></p>
+                <p><strong>Account Name:</strong> Opeyemi Aderele</p>
+            </div>
+            <p>Time remaining: <span id="countdown" style="color:#E91E63; font-weight:bold;">03:00</span></p>
+            <div style="margin-top:20px;">
+                <button id="transferDone" class="btn" style="background:#28a745; color:white; margin-right:10px;">Transfer Done</button>
+                <button id="cancelTransfer" class="btn" style="background:#dc3545; color:white;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Embed cart items for client-side submission
         const CART_ITEMS = <?php echo json_encode($cart_items); ?>;
 
-        document.getElementById('checkoutForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const form = e.target;
+        let countdownInterval;
 
-            // Gather form data
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showInfo('Copied', 'Account number copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                showError('Error', 'Failed to copy account number.');
+            });
+        }
+
+        function showBankModal() {
+            const form = document.getElementById('checkoutForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            document.getElementById('bankModal').style.display = 'flex';
+            startCountdown();
+        }
+
+        function startCountdown() {
+            let timeLeft = 180; // 3 minutes
+            countdownInterval = setInterval(() => {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                document.getElementById('countdown').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                timeLeft--;
+                if (timeLeft < 0) {
+                    clearInterval(countdownInterval);
+                    // Optional: auto-close or alert
+                }
+            }, 1000);
+        }
+
+        function closeBankModal() {
+            document.getElementById('bankModal').style.display = 'none';
+            clearInterval(countdownInterval);
+        }
+
+        document.getElementById('transferDone').addEventListener('click', function() {
+            closeBankModal();
+            // Now proceed with order creation
+            const form = document.getElementById('checkoutForm');
             const formData = new FormData(form);
             formData.append('action', 'create');
             formData.append('items', JSON.stringify(CART_ITEMS));
             formData.append('subtotal', '<?php echo $subtotal; ?>');
             formData.append('shipping', '0');
             formData.append('total', '<?php echo $total; ?>');
-            // Add payment details summary (do NOT store sensitive full card data in production)
+            // Add payment details summary
             const paymentDetails = {
-                cardName: formData.get('cardName') || '',
-                cardNumberLast4: (formData.get('cardNumber') || '').toString().slice(-4),
-                cardExp: formData.get('cardExp') || ''
+                method: 'bank',
+                // No sensitive data for bank transfer
             };
             formData.append('paymentDetails', JSON.stringify(paymentDetails));
 
@@ -238,7 +296,6 @@ $total = $subtotal;
                     sessionStorage.removeItem('cart');
                     setTimeout(() => { window.location.href = '<?php echo $BASE_URL; ?>'; }, 1200);
                 } else {
-                    // Show detailed debug info for debugging
                     const apiMsg = data.message || 'Failed to create order';
                     const dbErr = data.db_error ? '\n\nDatabase error: ' + data.db_error : '';
                     const debug = data.debug ? '\n\nDebug: ' + JSON.stringify(data.debug, null, 2) : '';
@@ -250,6 +307,13 @@ $total = $subtotal;
                 console.error('Fetch error while creating order:', err);
                 showError('Error', 'Failed to place order: ' + (err && err.message ? err.message : err));
             });
+        });
+
+        document.getElementById('cancelTransfer').addEventListener('click', closeBankModal);
+
+        // Close modal on outside click
+        document.getElementById('bankModal').addEventListener('click', function(e) {
+            if (e.target === this) closeBankModal();
         });
     </script>
 
