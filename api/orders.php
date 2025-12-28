@@ -47,25 +47,35 @@ try {
         // ----------------------------------------------------
         // 2. DEDUCT STOCK
         // ----------------------------------------------------
-        $sqlDeduct = "UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? AND stock_quantity >= ?";
-        $stmtDeduct = $conn->prepare($sqlDeduct);
-        if (!$stmtDeduct) { throw new Exception("DB Error (Deduct): " . $conn->error); }
-
         foreach ($items as $item) {
             $pid = (int)$item['id'];
+            $vid = (int)($item['variant_id'] ?? 0);
             $qty = (int)$item['quantity'];
             if ($qty <= 0) continue;
 
-            $stmtDeduct->bind_param("iii", $qty, $pid, $qty);
+            if ($vid > 0) {
+                // Deduct from variant
+                $sqlDeduct = "UPDATE product_variants SET stock_quantity = stock_quantity - ? WHERE id = ? AND product_id = ? AND stock_quantity >= ?";
+                $stmtDeduct = $conn->prepare($sqlDeduct);
+                $stmtDeduct->bind_param("iiii", $qty, $vid, $pid, $qty);
+            } else {
+                // Deduct from product
+                $sqlDeduct = "UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? AND stock_quantity >= ?";
+                $stmtDeduct = $conn->prepare($sqlDeduct);
+                $stmtDeduct->bind_param("iii", $qty, $pid, $qty);
+            }
+
+            if (!$stmtDeduct) { throw new Exception("DB Error (Deduct): " . $conn->error); }
             $stmtDeduct->execute();
 
             if ($stmtDeduct->affected_rows === 0) {
                 // Determine item name for cleaner error
                 $n = $item['name'] ?? "Item #$pid";
+                if (!empty($item['variant_name'])) $n .= " (" . $item['variant_name'] . ")";
                 throw new Exception("Insufficient stock for: $n");
             }
+            $stmtDeduct->close();
         }
-        $stmtDeduct->close();
 
         // ----------------------------------------------------
         // 3. CREATE ORDER HEADER

@@ -30,7 +30,7 @@ $gallery = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
 // 2. Fetch Variants
-$stmtV = $conn->prepare("SELECT * FROM product_variants WHERE product_id = ?");
+$stmtV = $conn->prepare("SELECT id, variant_name, price, stock_quantity FROM product_variants WHERE product_id = ?");
 $stmtV->bind_param("i", $product_id);
 $stmtV->execute();
 $variants = $stmtV->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -117,6 +117,13 @@ $is_out_of_stock = $stock <= 0;
             font-weight: 600;
             box-shadow: 0 2px 5px rgba(233, 30, 99, 0.3);
         }
+
+        .variant-pill.out-of-stock {
+            background: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
     </style>
 </head>
 
@@ -200,17 +207,19 @@ $is_out_of_stock = $stock <= 0;
                                 <div class="variant-pill selected" 
                                      data-id="" 
                                      data-price="<?= $product['price'] ?>"
+                                     data-stock="<?= $product['stock_quantity'] ?>"
                                      onclick="selectVariant(this)">
                                     Standard
                                 </div>
 
                                 <!-- 2. LOOP THROUGH DATABASE VARIANTS -->
                                 <?php foreach($variants as $var): ?>
-                                    <div class="variant-pill" 
+                                    <div class="variant-pill <?= $var['stock_quantity'] <= 0 ? 'out-of-stock' : '' ?>" 
                                          data-id="<?= $var['id'] ?>" 
                                          data-price="<?= $var['price'] ?>"
+                                         data-stock="<?= $var['stock_quantity'] ?>"
                                          onclick="selectVariant(this)">
-                                        <?= htmlspecialchars($var['variant_name']) ?>
+                                        <?= htmlspecialchars($var['variant_name']) ?> <?= $var['stock_quantity'] <= 0 ? '(Out of Stock)' : '' ?>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
@@ -287,6 +296,8 @@ $is_out_of_stock = $stock <= 0;
 
         // 2. VARIANT SELECTOR
         function selectVariant(el) {
+            if (el.classList.contains('out-of-stock')) return; // Prevent selecting out of stock
+
             // Visual Update
             document.querySelectorAll('.variant-pill').forEach(p => p.classList.remove('selected'));
             el.classList.add('selected');
@@ -294,23 +305,46 @@ $is_out_of_stock = $stock <= 0;
             // Data Update
             const newPrice = parseFloat(el.getAttribute('data-price'));
             const varId = el.getAttribute('data-id');
+            const varStock = parseInt(el.getAttribute('data-stock'));
 
             document.getElementById('displayPrice').innerText = '₦' + newPrice.toLocaleString('en-US', {
                 minimumFractionDigits: 2
             });
             document.getElementById('selectedVariantId').value = varId;
+
+            // Update availability display
+            const availabilityEl = document.querySelector('.availability');
+            const addToCartBtn = document.getElementById('addToCartBtn');
+            if (varStock <= 0) {
+                availabilityEl.innerHTML = '<i class="ri-close-circle-fill"></i> Out of Stock';
+                availabilityEl.style.color = 'var(--error, red)';
+                addToCartBtn.disabled = true;
+            } else {
+                availabilityEl.innerHTML = '<i class="ri-check-double-fill"></i> In Stock (' + varStock + ' left)';
+                availabilityEl.style.color = 'var(--success)';
+                addToCartBtn.disabled = false;
+            }
+
+            // Update max stock for quantity
+            window.currentMaxStock = varStock;
+            // Reset quantity if exceeds new max
+            const qtyInput = document.getElementById('quantity');
+            qtyInput.max = varStock;
+            if (parseInt(qtyInput.value) > varStock) {
+                qtyInput.value = varStock > 0 ? 1 : 0;
+            }
         }
 
         // 3. QUANTITY LOGIC
         const qtyInput = document.getElementById('quantity');
-        const maxStock = <?= $stock ?>;
+        window.currentMaxStock = <?= $stock ?>; // Default to product stock
         document.getElementById('decreaseQty').addEventListener('click', () => {
             if (qtyInput.value > 1) qtyInput.value--;
         });
         document.getElementById('increaseQty').addEventListener('click', () => {
             const currentQty = parseInt(qtyInput.value);
-            if (currentQty >= maxStock) {
-                showWarning('Stock Limit', `You can only add up to ${maxStock} items.`);
+            if (currentQty >= window.currentMaxStock) {
+                showInfo('Stock Limit', 'Only ' + window.currentMaxStock + ' items available in stock.');
                 return;
             }
             qtyInput.value = currentQty + 1;

@@ -127,15 +127,17 @@ require_once __DIR__ . '/../includes/db.php';
 
             <h3 id="page-title"><?php echo isset($page_title) ? $page_title : 'Admin Panel'; ?></h3>
 
-            <!-- <div class="top-right">
-                <button class="icon-btn" title="Notifications">
-                    <i class="ri-notification-3-line"></i>
-                    <span class="badge">3</span>
-                </button>
-                <button class="icon-btn" title="User Profile">
-                    <i class="ri-user-3-line"></i>
-                </button>
-            </div> -->
+            <div class="top-right">
+                <!-- ADD THIS NEW LINK -->
+                <a href="change_password.php" class="btn btn-icon" title="Change Password">
+                    <i class="ri-shield-keyhole-line"></i>
+                </a>
+
+                <!-- Existing Logout Button -->
+                <a href="logout.php" class="btn btn-outline" style="border-color: red; color: red;">
+                    <i class="ri-logout-box-r-line"></i> Logout
+                </a>
+            </div>       
         </div>
 
         <!-- Page Content -->

@@ -26,18 +26,27 @@ try {
 
         $finalPrice = $product['price'];
         $variantName = "";
+        $availableStock = $product['stock_quantity'];
 
-        // If Variant Selected, Fetch Specific Price & Name
+        // If Variant Selected, Fetch Specific Price, Name & Stock
         if ($vid > 0) {
-            $stmt = $conn->prepare("SELECT * FROM product_variants WHERE id = ? AND product_id = ?");
+            $stmt = $conn->prepare("SELECT variant_name, price, stock_quantity FROM product_variants WHERE id = ? AND product_id = ?");
             $stmt->bind_param("ii", $vid, $pid);
             $stmt->execute();
             $res = $stmt->get_result();
             if ($row = $res->fetch_assoc()) {
                 $finalPrice = (float)$row['price'];
                 $variantName = $row['variant_name'];
+                $availableStock = (int)$row['stock_quantity'];
+            } else {
+                throw new Exception("Variant not found");
             }
             $stmt->close();
+        }
+
+        // Check stock
+        if ($availableStock < $qty) {
+            throw new Exception("Insufficient stock. Only $availableStock available.");
         }
 
         // Create Unique Key: "Product_Variant" (e.g. 10_0 or 10_5)
@@ -55,7 +64,7 @@ try {
                 'price' => $finalPrice,
                 'image' => $product['image'],
                 'quantity' => $qty,
-                'stock_quantity' => $product['stock_quantity']
+                'stock_quantity' => $availableStock
             ];
         }
 
